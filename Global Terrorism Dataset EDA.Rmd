@@ -1,0 +1,270 @@
+---
+title: "Global Terrorism Data EDA"
+author: "Kent Roller"
+date: "2024-08-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Need to import the file, using choose.file() to select location of file on PC
+```{r}
+#file.choose()
+```
+Comment out the code after running so when attempting to knit the markdown file it doesn't run again and bring up the window
+
+Use read.csv to load in the file
+```{r}
+terror_data<-read.csv("C:\\Users\\super\\OneDrive\\Desktop\\globalterrorismdb_shorter.csv")
+```
+
+So there are a ton of variables in this data and we certianly dont need all of them. So here, will go ahead and trim the data in order to make the dataset relevant to what we are trying to accomplish. 
+
+For the initial dataset we will retain the lat and long of the data to produce a map of terror attacks for an additional visual. 
+There are also alot of variables that have many NA values or values such as -99 that wont be useful for analysis. 
+
+```{r}
+terror_dat<-terror_data[,c(2,7,9,10,11,12,13,16,17,25,26,27,28,29:35,37,38,39,46,47)]
+```
+
+
+Now for some exploratory plots to summarize the data in the new dataset to get an idea of what we are looking at. 
+```{r}
+library(tidyverse)
+library(viridis)
+
+#Need to sort data so barplot is listed from highest to lowest
+#creating a new variable for the sorted data incase need something from the unsorted version later since it has been converted to a factor, which we may want to do anyway
+
+
+#plot new sorted variable using ggplot
+ggplot(terror_dat,aes(x=attacktype1_txt_sorted))+
+  geom_bar(fill="skyblue")+
+  xlab("Attack Type")+
+  ylab("Frequency")+
+  ggtitle("Histogram of Attack Types")+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+    legend.position="none")
+
+```
+
+
+Additional plots
+```{r}
+# Historgram of Year
+ggplot(terror_dat, aes(x=iyear))+
+  geom_bar(fill="red")+
+  xlab("Year")+
+  ylab("Frequency of Attacks")+
+  ggtitle("Frequency of Attacks by Year")
+  theme_classic()
+```
+
+```{r}
+ggplot(terror_dat, aes(x=region_txt))+
+  geom_bar(fill="darkgreen")+
+  ggtitle("Frequency of Attacks by Region")+
+  xlab("Region")+
+  ylab("Frequency")+
+  theme_classic()
+
+#And crap, its unsorted, so like with the attacktype, will create a factor version of this to order and make a new plot 
+```
+
+
+```{r}
+#Making a new variable to store the Factor version of Region 
+terror_dat$region_txt_ordered<-factor(terror_dat$region_txt, levels=names(sort(table(terror_dat$region_txt), decreasing=TRUE)))
+
+#Now that the variable is ordered make a new plot and rotate the xaxis labels so they are readable. 
+ggplot(terror_dat,aes(x=region_txt_ordered))+
+  geom_bar(fill="darkgreen")+
+  xlab("Region")+
+  ylab("Frequency")+
+  ggtitle("Regional Frequency of Attacks")+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+    legend.position="none")
+
+#OK, that looks better
+```
+
+
+
+```{r}
+ggplot(terror_dat, aes(x=targtype1_txt))+
+  geom_bar(fill="darkblue")+
+  ggtitle("Target Types Frequency Plot")+
+  xlab("Target Types")+
+  ylab("Frequency of Selection")+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+    legend.position="none")
+#Crap, this one isnt sorted either
+```
+
+
+```{r}
+#Making a new variable to store the Factor version of Target Type 
+terror_dat$targtype1_txt_ordered<-factor(terror_dat$targtype1_txt, levels=names(sort(table(terror_dat$targtype1_txt), decreasing=TRUE)))
+
+#plot new ordered variable for cleaner output
+ggplot(terror_dat, aes(x=targtype1_txt_ordered))+
+  geom_bar(fill="darkblue")+
+  ggtitle("Target Types Frequency Plot")+
+  xlab("Target Types")+
+  ylab("Frequency of Selection")+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+    legend.position="none")
+```
+
+
+
+```{r}
+#Make a scatterplot that look at the attack type over the years to see if one type of attack has become more frequent over time
+
+#Grouping year and attack type to try and make plotting easier 
+attack_type_summary<-terror_dat %>% 
+  group_by(iyear, attacktype1_txt_sorted) %>%
+  summarize(frequency=n())
+
+ggplot(attack_type_summary, aes(x=iyear, y=frequency, color=attacktype1_txt_sorted))+
+  geom_point(size=3)+
+  xlab("Year")+
+  ylab("Frequency")+
+  ggtitle("Frequency of Attacks by Year and Attack Type")+
+  theme_classic()+
+  scale_color_viridis_d()
+
+#Hmmm, its there but a line plot may be cleaner and easier to read
+```
+
+
+
+```{r}
+#This is easy enough to do, we just need to change the geom_point to a geom_line and this should produce a cleaner graph
+ggplot(attack_type_summary, aes(x=iyear, y=frequency, color=attacktype1_txt_sorted))+
+  geom_line(size=1)+
+  xlab("Year")+
+  ylab("Frequency")+
+  ggtitle("Frequency of Attacks by Year and Attack Type")+
+  theme_classic()+
+  scale_color_viridis_d()
+
+#Yeah, thats probably more readable
+```
+
+
+Now to make a similar plot but this time with year and region, so we can examine where attacks have increased over time, and then again with region and attack type to see what regions have the what attack types. 
+
+```{r}
+#Grouping year and region to try and make plotting easier 
+attack_type_summary<-terror_dat %>% 
+  group_by(iyear, region_txt_ordered) %>%
+  summarize(frequency=n())
+
+ggplot(attack_type_summary, aes(x=iyear, y=frequency, color=region_txt_ordered))+
+  geom_line(size=1)+
+  xlab("Year")+
+  ylab("Frequency")+
+  ggtitle("Frequency of Attacks by Year and Region")+
+  theme_classic()+
+  scale_color_viridis_d(option="plasma")
+```
+
+
+```{r}
+attack_region_summary<-terror_dat %>% 
+  group_by(attacktype1_txt, region_txt_ordered) %>%
+  summarize(frequency=n())
+
+ggplot(attack_region_summary, aes(x=region_txt_ordered, y=frequency, fill=attacktype1_txt))+
+  geom_bar(stat="identity", position="dodge")+
+  xlab("Year")+
+  ylab("Frequency")+
+  ggtitle("Frequency of Attacks by Type and Region")+
+  theme_classic()+
+  scale_color_viridis_d(option="magma")+
+  theme(axis.text.x = element_text(angle = 35, hjust = 1),
+        #may or may not want to adjust legend size, if not just    #remove the legend. stuff below
+    legend.key.size = unit(0.5, "cm"),      
+    legend.text = element_text(size = 8),   
+    legend.title = element_text(size = 10))
+```
+
+
+```{r}
+#Histogram of the weapon types used in the attacks 
+ggplot(terror_dat, aes(x=weaptype1_txt))+
+  geom_bar(fill="gray")+
+  ggtitle("Weapon Type Frequency")+
+  xlab("Weapon Type")+
+  ylab("Frequency")+
+  theme_classic()
+  #and of course need to order it
+```
+
+
+```{r}
+terror_dat$weaptype1_txt_ordered<-factor(terror_dat$weaptype1_txt, levels=names(sort(table(terror_dat$weaptype1_txt), decreasing=TRUE)))
+
+ggplot(terror_dat, aes(x=weaptype1_txt_ordered))+
+  geom_bar(fill="gray")+
+  ggtitle("Weapon Type Frequency")+
+  xlab("Weapon Type")+
+  ylab("Frequency")+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 25, hjust = 1))
+```
+
+
+
+
+```{r}
+str(terror_dat$country_txt)
+```
+
+Create a frequency ratio table as in homework 2. To do this 
+will be using the country_txt variable and then creating a frequency count based on its occurrence in the data set. Then we will create a ratio for each country and then display that information in a table. 
+
+
+
+```{r}
+#using dplyr and piping to modify the data accordingly
+#Creating a new variable and piping the original dataset
+country_summary<-terror_dat %>%
+  #grouping by country 
+  group_by(country_txt) %>%
+  #summing the number of times each country occurs and storing in frequency 
+  summarize(frequency=n())%>%
+  #mutate to create a ratio out of the sums just found
+  mutate(ratio=frequency/sum(frequency)) %>%
+  #arrange output in descending order
+  arrange(desc(frequency))
+
+print(country_summary)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
