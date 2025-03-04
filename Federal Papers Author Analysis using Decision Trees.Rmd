@@ -1,0 +1,578 @@
+---
+title: "Federal Papers Analysis using Decision Trees"
+author: "Kent Roller"
+date: "2024-08-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Need to import the same dataset and perform analysis on it once more, though this time with decision trees instead of clustering methods. 
+Going to use the same data as with the previous assignment in order to keep comparisons between methods fair(if at all required)
+
+```{r}
+#file.choose()
+```
+
+```{r}
+fed_papers<-read.csv("C:\\Users\\super\\Downloads\\fedPapers85.csv")
+```
+
+
+Now we can examine the structure of the dataset to learn more about it 
+```{r}
+str(fed_papers)
+```
+The data is comprised of a dataframe, so we do not need to perform this particular step as we would if we were importing from a raw text file that had not been prefiltered. 
+
+Since the data is prefiltered we can begin with the exploration to see how the data looks. One interesting aspect, what words did the authors use with the highest level of freqeuncy?
+To begin answering this, will create a new variable that isolates each author for easier examination. 
+
+First step, load libraries 
+```{r}
+library(tidyverse)
+library(stringr)
+library(tidytext)
+```
+Now isolate the first author
+
+```{r}
+hamilton_iso<-fed_papers %>% filter(author == "Hamilton")
+```
+
+Ok, so, have the first author isolated, but running into an issue trying to use tidytext, going to assume this is once again due to the prerequsite work already completed on the dataset. So, going to try another approach. We don't need the author or filename, so we can remove those, and then since the variables are a numeric value we can sort based on that value. 
+Better yet...we can sum each variable to get a total use across all documents and take the average to compare total use to average use of each authors words across documents. 
+
+First we will remove the first two rows
+```{r}
+hamilton_iso<-hamilton_iso[,-c(1,2)]
+```
+```{r}
+library(RColorBrewer)
+```
+
+Ok, first, write function to iterate through each variable and sum them, then returning the top 10 sums via variable name
+```{r}
+get_top_words<-function(data){
+  #Making sure all values are numeric making removing data unneeded
+  numeric_values<-data %>% select_if(is.numeric)
+  #Summing each column representing each word
+  sums<-colSums(numeric_values, na.rm = TRUE)
+  #Pulling the top 10 values out and storing them
+  top_words<-sort(sums, decreasing=TRUE)[1:10]
+  #Returning the data as a dataframe
+  top_words_df<-data.frame(t_words=names(top_words), total=top_words)
+  return(top_words_df)
+}
+```
+
+Ok, function made, now lets see if it works
+```{r}
+hamilton_top_10<-get_top_words(hamilton_iso)
+print(hamilton_top_10)
+```
+
+```{r}
+ggplot(hamilton_top_10, aes(x=reorder(t_words,total),y=total, fill=total))+
+  geom_col()+
+  coord_flip()+
+  labs(title="Hamilton Top 10 Words Used", x="Words", y="Totals")+
+  scale_color_brewer(palette="Dark2")+
+  theme_minimal()
+```
+hmmm..wrong output based on selected theme,...this happens every time I try to use this package...
+
+
+
+Now we can go ahead and do the same for the other authors and the disputed papers. 
+
+```{r}
+madison_iso<-fed_papers %>% filter(author=="Madison")
+jay_iso<-fed_papers %>% filter(author=="Jay")
+disputed_iso<-fed_papers %>% filter(author=="dispt")
+```
+
+
+Now apply the created function to each author to see what their top 10 words were 
+
+```{r}
+madison_top_10<-get_top_words(madison_iso)
+print(madison_top_10)
+```
+
+
+```{r}
+jay_top_10<-get_top_words(jay_iso)
+print(jay_top_10)
+```
+
+
+```{r}
+disputed_top_10<-get_top_words(disputed_iso)
+print(disputed_top_10)
+```
+
+
+
+Now we can visualize each one of these
+```{r}
+library(viridis)
+```
+
+
+
+```{r}
+ggplot(madison_top_10, aes(x=reorder(t_words,total),y=total, fill=total))+
+  geom_col()+
+  coord_flip()+
+  labs(title="Madison Top 10 Words Used", x="Words", y="Ratio Totals")+
+  scale_fill_viridis(discrete=FALSE)+
+  theme_minimal()
+```
+Ok, apparently I can use the viridis package just not the rcolorbrewer package...I can use it with the default plotting options like boxplot or hist but trying to use it with ggplot always gives me issues. 
+Anyway, we have enough options in viridis to get through the authors on hand. 
+
+```{r}
+ggplot(jay_top_10, aes(x=reorder(t_words,total),y=total, fill=total))+
+  geom_col()+
+  coord_flip()+
+  labs(title="Jay Top 10 Words Used", x="Words", y="Ratio Totals")+
+  scale_fill_viridis(option="plasma",discrete=FALSE)+
+  theme_minimal()
+```
+
+
+
+```{r}
+ggplot(disputed_top_10, aes(x=reorder(t_words,total),y=total, fill=total))+
+  geom_col()+
+  coord_flip()+
+  labs(title="Disputed Top 10 Words Used", x="Words", y="Ratio Totals")+
+  scale_fill_viridis(option="magma", discrete=FALSE)+
+  theme_minimal()
+```
+hmm...magma and inferno are kind of meh....will remember that for future reference
+
+
+
+We can also examine the average via the creation of another function, and the minimum as well to try and get a clear picture what each authors writing style looked like 
+
+Creating a function to get the average occurance for each word based on the numeric value stored for each word
+```{r}
+get_avg_words<-function(data){
+  #Making sure all values are numeric making removing data unneeded
+  numeric_values<-data %>% select_if(is.numeric)
+  #Averaging each column representing each word
+  avgs<-colMeans(numeric_values, na.rm = TRUE)
+  #Pulling the top 10 values out and storing them
+  avg_words<-sort(avgs, decreasing=TRUE)[1:10]
+  #Returning the data as a dataframe
+  avg_words_df<-data.frame(avgr_words=names(avg_words), avg_word_use=avg_words)
+  return(avg_words_df)
+}
+```
+
+
+```{r}
+hamilton_avg_10<-get_avg_words(hamilton_iso)
+print(hamilton_avg_10)
+```
+
+
+```{r}
+madison_avg_10<-get_avg_words(madison_iso)
+print(madison_avg_10)
+```
+
+
+
+```{r}
+jay_avg_10<-get_avg_words(jay_iso)
+print(jay_avg_10)
+```
+
+
+
+```{r}
+dispt_avg_10<-get_avg_words(disputed_iso)
+print(dispt_avg_10)
+```
+And now for additional visualizations for the averages
+```{r}
+ggplot(hamilton_avg_10, aes(x=reorder(avgr_words,avg_word_use),y=avg_word_use, fill=avg_word_use))+
+  geom_col()+
+  coord_flip()+
+  labs(title="Hamilton Top 10 Average Words", x="Words", y="Ratio Totals")+
+  scale_color_brewer(palette="Dark2")+
+  theme_minimal()
+```
+I mean it throws an error for using scale_fill_brewer so then change to scale_color_brewer and it makes the plot but it ignores the palette argument. There must be additional argunments needed but again, future reference. This is why I just stick to the wes_anderson palette...It Just Works!!! Well, not here, using the viridis package but for gradient charts that seems better?
+
+
+
+```{r}
+ggplot(madison_avg_10, aes(x=reorder(avgr_words,avg_word_use),y=avg_word_use, fill=avg_word_use))+
+  geom_col()+
+  coord_flip()+
+  labs(title="Madison Top 10 Average Words", x="Words", y="Ratio Totals")+
+  scale_fill_viridis(discrete = FALSE)+
+  theme_minimal()
+```
+
+```{r}
+ggplot(jay_avg_10, aes(x=reorder(avgr_words,avg_word_use),y=avg_word_use, fill=avg_word_use))+
+  geom_col()+
+  coord_flip()+
+  labs(title="Jay Top 10 Average Words", x="Words", y="Ratio Totals")+
+  scale_fill_viridis(option="plasma",discrete=FALSE)+
+  theme_minimal()
+```
+
+```{r}
+ggplot(dispt_avg_10, aes(x=reorder(avgr_words,avg_word_use),y=avg_word_use, fill=avg_word_use))+
+  geom_col()+
+  coord_flip()+
+  labs(title="Disputed Top 10 Average Words", x="Words", y="Ratio Totals")+
+  scale_fill_viridis(option="magma", discrete = FALSE)+
+  theme_minimal()
+```
+
+
+
+Creating function for finding the minimum 10 words used for each author 
+```{r}
+get_min_words<-function(data){
+  #Making sure all values are numeric making removing data unneeded
+  numeric_values<-data %>% select_if(is.numeric)
+  #Summing each column representing each word
+  sums<-colSums(numeric_values, na.rm = TRUE)
+  #Pulling the last 10 values out and storing them
+  min_words<-sort(sums, decreasing=TRUE)[61:70]
+  #Returning the data as a dataframe
+  min_words_df<-data.frame(mini_words=names(min_words), value=min_words)
+  return(min_words_df)
+}
+```
+
+
+
+```{r}
+hamilton_min_10_2<-get_min_words(hamilton_iso)
+print(hamilton_min_10_2)
+```
+
+```{r}
+madison_10_min<-get_min_words(madison_iso)
+print(madison_10_min)
+```
+
+
+
+```{r}
+jay_min_10<-get_min_words(jay_iso)
+print(jay_min_10)
+```
+
+```{r}
+dispt_min_10<-get_min_words(disputed_iso)
+print(dispt_min_10)
+```
+
+Creating visualizations for each of the minimum words used for each author. 
+
+```{r}
+ggplot(hamilton_min_10_2, aes(x=reorder(mini_words,value),y=value, fill=value))+
+  geom_col()+
+  coord_flip()+
+  labs(title="Hamilton Top 10 Least Words Used", x="Words", y="Ratio Totals")+
+  scale_color_brewer(palette="Dark2")+
+  theme_minimal()
+```
+
+
+
+```{r}
+ggplot(madison_10_min, aes(x=reorder(mini_words,value),y=value, fill=value))+
+  geom_col()+
+  coord_flip()+
+  labs(title="Madison Top 10 Least Words Used", x="Words", y="Ratio Totals")+
+  scale_fill_viridis(discrete = FALSE)+
+  theme_minimal()
+```
+
+
+```{r}
+ggplot(jay_min_10, aes(x=reorder(mini_words,value),y=value, fill=value))+
+  geom_col()+
+  coord_flip()+
+  labs(title="Jay Top 10 Least Words Used", x="Words", y="Ratio Totals")+
+  scale_fill_viridis(option="plasma", discrete=FALSE)+
+  theme_minimal()
+```
+
+
+
+```{r}
+ggplot(dispt_min_10, aes(x=reorder(mini_words,value),y=value, fill=value))+
+  geom_col()+
+  coord_flip()+
+  labs(title="Disputed Papers Top 10 Least Words Used", x="Words", y="Ratio Totals")+
+  scale_fill_viridis(option="magma", discrete=FALSE)+
+  theme_minimal()
+```
+
+
+
+Now that we have done some general data exploration lets take a deeper dive using decision trees. Need to begin by setting up the testing a training data. 
+
+
+```{r}
+num_disputed=11
+num_total_papers=nrow(fed_papers)
+train_ratio<-.60
+set.seed(42)
+sample<-sample.int(n=num_total_papers-num_disputed, size=floor(train_ratio*num_total_papers), replace=FALSE)
+new_sample<-sample+num_disputed
+train<-fed_papers[new_sample,]
+test<-fed_papers[-new_sample,]
+
+```
+
+
+
+OK, now that the test and training data is created we can move to the next step and begin classification. Need to make sure rpart is loaded
+
+```{r}
+library(rpart)
+```
+
+
+```{r}
+#Tree 1
+#train_tree1<-rpart(author~.,data=train, method="class")
+#summary(train_tree1)
+```
+
+
+```{r}
+#Tree 1
+#train_tree1<-rpart(author~.,data=train, method="class")
+#summary(train_tree1)
+```
+
+
+
+```{r}
+fed_papers2<-fed_papers
+```
+
+
+
+```{r}
+dtm<-as.matrix(fed_papers2)
+```
+
+
+```{r}
+#library(rpart)
+```
+
+
+```{r}
+train_tree2 <- rpart(author ~ upon + may + will + one, data = train, method="class", control=rpart.control(cp=0.1, minsplit = 2, maxdepth = 3))
+```
+Ok that ran in like .1 seconds...so...the dataset it set up correctly as it is in dataframe format and I get the expected output below...will read more into this to try and figure out what I am missing 
+```{r}
+summary(train_tree2)
+```
+Now that we have a model working, lets see how it actually performs with the test data 
+
+```{r}
+predicted_auth<-predict(train_tree2, test, type = "class")
+```
+```{r}
+rsq.rpart(train_tree2)
+```
+
+
+```{r}
+plotcp(train_tree2)
+```
+```{r}
+#library(rpart.plot)
+library(rattle)
+```
+
+```{r}
+fancyRpartPlot(train_tree2)
+```
+
+
+```{r}
+table(authorship=predicted_auth, true=test$author)
+```
+
+
+
+```{r}
+train_tree3 <- rpart(author ~ the + of + to + in. + and + a + be + that + which + is + by + or + her + do + now + then + also + up + my + things + your + down + when + upon + shall, data = train, method="class", control=rpart.control(cp=0, minsplit = 2, maxdepth = 3))
+```
+
+
+```{r}
+summary(train_tree3)
+```
+
+
+
+```{r}
+predicted_auth2<-predict(train_tree3, test, type="class")
+```
+
+
+```{r}
+rsq.rpart(train_tree3)
+```
+
+
+
+```{r}
+plotcp(train_tree3)
+```
+
+
+
+```{r}
+fancyRpartPlot(train_tree3)
+```
+
+
+
+
+
+```{r}
+table(authorship=predicted_auth2, true=test$author)
+```
+
+
+
+
+
+
+
+```{r}
+train_tree4 <- rpart(author ~ the + of + to + in. + and + a + be + that + which + is + by + or + her + do + now + then + also + up + my + things + your + down + when + upon + shall, data = train, method="class", control=rpart.control(cp=0.01, minsplit = 3, maxdepth = 6))
+```
+
+```{r}
+summary(train_tree4)
+```
+
+
+```{r}
+predicted_auth3<-predict(train_tree4, test, type="class")
+```
+
+
+
+```{r}
+rsq.rpart(train_tree4)
+```
+
+
+
+
+
+```{r}
+plotcp(train_tree4)
+```
+
+
+
+
+```{r}
+fancyRpartPlot(train_tree4)
+```
+
+
+
+```{r}
+table(authorship=predicted_auth3, true=test$author)
+```
+
+
+```{r}
+train_tree5 <- rpart(author ~ the + of + to + in. + and + a + be + that + which + is + by + or + her + do + now + then + also + up + my + things + your + down + when + upon + shall, data = train, method="class", control=rpart.control(cp=0.01, minsplit = 12, maxdepth = 15))
+```
+
+```{r}
+summary(train_tree5)
+```
+
+
+```{r}
+predicted_auth4<-predict(train_tree5, test, type="class")
+```
+
+
+```{r}
+rsq.rpart(train_tree5)
+```
+
+
+
+```{r}
+fancyRpartPlot(train_tree5)
+```
+
+
+
+```{r}
+table(authorship=predicted_auth4, true=test$author)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
