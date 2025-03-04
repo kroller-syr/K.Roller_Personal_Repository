@@ -1,0 +1,492 @@
+---
+title: "School Perfomance Analysis via EDA"
+author: "Kent Roller"
+date: "2024-07-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Loading in packages for later use in the assignment.
+(Should be able to load tidyverse which should include ggplot2/dplyr/caret. Maybe not caret. But ggplot2 and dplyr should be loaded as part of the verse part of the package.)
+```{r}
+library(tidyverse)
+library(forcats)
+library(stargazer)
+library(modelr)
+library(caret)
+```
+Reading in the data set by first using from.choose() to get the path name of the file location 
+```{r}
+#file.choose()
+```
+
+Comment the code out after getting the filepath to avoid the code running again when knitting or rerunning code. Using filepath to load in csv. 
+
+```{r}
+storyteller<-read.csv("C:\\Users\\super\\Downloads\\data-storyteller (1).csv", na=c(""))
+```
+
+Checking the data types to see what the file consist of and if anything needs to be further changed. 
+```{r}
+str(storyteller)
+```
+
+School is a chr and based on the structure of the data this would be better suited as a factor. Likewise, we will need to do something for the ratings of very ahead, middling, etc to condense them down into levels or bins instead of individual variables. 
+
+```{r}
+storyteller$School<-factor(storyteller$School)
+```
+
+```{r}
+storyteller$`Very Ahead +5`<-as.integer(storyteller$Very.Ahead..5)
+storyteller$`Middling +0`<-as.integer(storyteller$Middling..0)
+storyteller$`Behind -1-5`<-as.integer(storyteller$Behind..1.5)
+storyteller$`More Behind -6-10`<-as.integer(storyteller$More.Behind..6.10)
+storyteller$`Very Behind -11`<-as.integer(storyteller$Very.Behind..11)
+storyteller$Completed<-as.integer(storyteller$Completed)
+```
+
+Removing unmodified rows from dataset for tidiness sake 
+```{r}
+storyteller<-storyteller[,-c(3:7)]
+```
+
+
+Reordering the columns in a way that makes more sense. Unlike the tutorial removed the previous values, Completed was in index 3 so there was no need to change its position. 
+
+```{r}
+storytellerTemp<-storyteller[,c(2,1,3,4,5,6,7,8)]
+storyteller<-storytellerTemp
+```
+
+```{r}
+head(storyteller)
+```
+
+Checking for any missing data in the dataset. 
+```{r}
+sum(is.na(storyteller))
+```
+
+There are zero NAs in the dataset, so we do not need to take any further action in regards to resolving NAs. 
+
+
+
+*Note on the observation: Is there any advantage in breaking up the variables as they have been? Do we need to have such a granular view of the dataset? Does making this distinction between how behind a student is actually matter in the overall understanding of which schools are under performing or not? From an initial glance, the thought is no, regardless of whether a little or a lot a failure is a failure. A kind of an F or a hard F, they are both Fs, it makes no difference. As such, why not combine the counts and have 3 total bins consisting of ahead, middling, and behind? I will refrain from doing this at this point in the assignment as I see the hints code continues to make use of this division, though may add to the end for personal testing. Additionally, is there a more in depth explanation for the dataset and why this division was made? Having that information would be key before getting wild and combing variables. 
+
+
+Data Visualizations 
+
+Barchart showing the number of sections from each school: 
+```{r}
+school_values<-c(length(which(storyteller$School=='A')), length(which(storyteller$School=='B')), length(which(storyteller$School=='C')), 
+length(which(storyteller$School=='D')),
+length(which(storyteller$School=='E')))
+
+barplot(school_values, names.arg=c('A','B', 'C', 'D', 'E'), main="Number of Sections per School")
+
+```
+
+
+Plotting section and complete as well as summarizing the data
+```{r}
+barplot(storyteller$Completed, main='# Completed Students per Section', names.arg=c(1:30))
+summary(storyteller$Completed)
+```
+
+
+Further cleaning of the dataset based on the visualizations produced so far. 
+```{r}
+barplot(storyteller$`Very Ahead +5`, main='# Very Ahead Students per Section', names.arg=c(1:30))
+
+summary(storyteller$`Very Ahead +5`)
+```
+
+
+
+
+```{r}
+barplot(storyteller$`Middling +0`, main='# Middling Students per Section', names.arg=c(1:30))
+
+summary(storyteller$`Middling +0`)
+```
+
+
+
+```{r}
+barplot(storyteller$`Behind -1-5`, main='# Behind Students per Section', names.arg=c(1:30))
+
+summary(storyteller$`Behind -1-5`)
+```
+
+
+
+
+
+```{r}
+barplot(storyteller$`More Behind -6-10`, main='# More Behind Students per Section', names.arg=c(1:30))
+
+summary(storyteller$`More Behind -6-10`)
+```
+
+
+
+```{r}
+barplot(storyteller$`Very Behind -11`, main='# Very Behind Students per Section', names.arg=c(1:30))
+
+summary(storyteller$`Very Behind -11`)
+
+```
+
+
+
+Getting a count of the total number of students
+
+```{r}
+student_sums<-colSums(storyteller[,3:8])
+sum(student_sums)
+```
+
+Determining the amount of students per section 
+```{r}
+section_sums<-rowSums(storyteller[,3:8])
+data.frame(section_sums)
+```
+
+
+Creating a barplot to show the overall distribution across categories.
+
+```{r}
+student_sums2<-colSums(storyteller[,3:8])
+barplot(student_sums2, main="Student Totals Across all Categories")
+```
+
+
+
+
+
+```{r}
+plot(storyteller$Completed, storyteller$`Middling +0`)
+```
+
+
+
+
+Breaking the data down across individual schools
+```{r}
+storytellerA<-storyteller[which(storyteller$School=='A'),]
+storytellerB<-storyteller[which(storyteller$School=='B'),]
+storytellerC<-storyteller[which(storyteller$School=='C'),]
+storytellerD<-storyteller[which(storyteller$School=='D'),]
+storytellerE<-storyteller[which(storyteller$School=='E'),]
+```
+
+plotting each of the schools
+```{r}
+student_sums_a<-colSums(storytellerA[3:8])
+student_sums_a
+barplot(student_sums_a, main='School A')
+
+```
+
+
+```{r}
+student_sums_b<-colSums(storytellerB[3:8])
+student_sums_b
+barplot(student_sums_b, main='School B')
+```
+
+
+
+```{r}
+student_sums_c<-colSums(storytellerC[3:8])
+student_sums_c
+barplot(student_sums_c, main='School C')
+```
+
+
+
+
+```{r}
+student_sums_d<-colSums(storytellerD[3:8])
+student_sums_d
+barplot(student_sums_d, main='School D')
+```
+
+
+
+
+```{r}
+student_sums_e<-colSums(storytellerE[3:8])
+student_sums_e
+barplot(student_sums_e, main='School E')
+```
+
+
+
+
+
+Comparing the two schools as a representation of the population of program takers based on the observations made in the hints file:
+```{r}
+sum(student_sums_b)/sum(student_sums2)
+```
+
+
+```{r}
+sum(student_sums_d)/sum(student_sums2)
+```
+
+
+As noted in the observations, school B makes up ~27.8% of the overall population being observed, while school D only makes up ~1.4% of the overall population. This means that any observation of school D will not be representative of the overall population as school B will be. 
+
+
+Looking at the data to determine the quality selections: 
+```{r}
+barplot(storytellerB$Completed, names.arg=c(1:12), ylim=c(0,30), main='Students Completed by Section')
+```
+
+
+
+```{r}
+rowSums(storytellerB[,3:8])
+barplot(storytellerB$`Behind -1-5`+storytellerB$`More Behind -6-10`+storytellerB$`Very Behind -11`, names.arg=c(1:12), ylim=c(0,30), main='Students Behind by Section')
+```
+
+
+
+```{r}
+storyteller$Section
+```
+
+```{r}
+str(storyteller)
+```
+
+
+
+
+
+
+Performing further investigation of the point brought up earlier. That is, while the visuals let us get a broad overview, they lack the ability to convey the granular detail of the data. That is to say, we can see the distribution of the categories per school, but what does the actual proportional contribution of completed or behind look like for each school? To answer this, we can take the method from above but instead of applying it to the entire school raw count we can apply it to the category of interest and divide by the overall count to get this ratio. We can then put it into a table to add to the report for an at a glance in depth view of the data. 
+
+```{r}
+student_completed_sum<-sum(storyteller$Completed)
+```
+
+```{r}
+student_completed_a_sum<-sum(storytellerA$Completed)
+```
+
+```{r}
+student_completed_b_sum<-sum(storytellerB$Completed)
+student_completed_c_sum<-sum(storytellerC$Completed)
+student_completed_d_sum<-sum(storytellerD$Completed)
+student_completed_e_sum<-sum(storytellerE$Completed)
+
+```
+
+```{r}
+student_completed_a_ratio<-student_completed_a_sum/student_completed_sum
+student_completed_a_ratio
+```
+```{r}
+student_completed_b_ratio<-student_completed_b_sum/student_completed_sum
+student_completed_b_ratio
+```
+```{r}
+student_completed_c_ratio<-student_completed_c_sum/student_completed_sum
+student_completed_c_ratio
+```
+```{r}
+student_completed_d_ratio<-student_completed_d_sum/student_completed_sum
+student_completed_d_ratio
+```
+
+```{r}
+student_completed_e_ratio<-student_completed_e_sum/student_completed_sum
+student_completed_e_ratio
+```
+
+```{r}
+student_behind_sum<-sum(storyteller$`Behind -1-5`)
+student_behind_a_sum<-sum(storytellerA$`Behind -1-5`)
+student_behind_a_ratio<-student_behind_a_sum/student_behind_sum
+student_behind_a_ratio
+```
+
+```{r}
+student_behind_b_sum<-sum(storytellerB$`Behind -1-5`)
+student_behind_b_ratio<-student_behind_b_sum/student_behind_sum
+student_behind_b_ratio
+```
+```{r}
+student_behind_c_sum<-sum(storytellerC$`Behind -1-5`)
+student_behind_c_ratio<-student_behind_c_sum/student_behind_sum
+student_behind_c_ratio
+```
+
+```{r}
+student_behind_d_sum<-sum(storytellerD$`Behind -1-5`)
+student_behind_d_ratio<-student_behind_d_sum/student_behind_sum
+student_behind_d_ratio
+```
+
+```{r}
+student_behind_e_sum<-sum(storytellerE$`Behind -1-5`)
+student_behind_e_ratio<-student_behind_e_sum/student_behind_sum
+student_behind_e_ratio
+```
+
+
+OK,  so now there is a giant list of ratios, but need to make it way more accessible in terms of readability.
+```{r}
+school_proportional_cont <- data.frame(
+  `Percent of Students behind` = c(student_behind_a_ratio, student_behind_b_ratio, student_behind_c_ratio, student_behind_d_ratio, student_behind_e_ratio),
+  `Percent of Students completed` = c(student_completed_a_ratio, student_completed_b_ratio, student_completed_c_ratio, student_completed_d_ratio, student_completed_e_ratio),
+  row.names = c("School A", "School B", "School C", "School D", "School E")
+)
+print(school_proportional_cont)
+```
+
+
+
+
+```{r}
+school_proportional_cont1 <- data.frame(
+  `Percent of Students behind` = c(student_behind_a_ratio*100, student_behind_b_ratio*100, student_behind_c_ratio*100, student_behind_d_ratio*100, student_behind_e_ratio*100),
+  `Percent of Students completed` = c(student_completed_a_ratio*100, student_completed_b_ratio*100, student_completed_c_ratio*100, student_completed_d_ratio*100, student_completed_e_ratio*100),
+  row.names = c("School A", "School B", "School C", "School D", "School E")
+)
+print(school_proportional_cont1)
+```
+
+
+```{r}
+student_middling_sum<-sum(storyteller$`Middling +0`)
+student_middling_a_sum<-sum(storytellerA$`Middling +0`)
+student_middling_a_ratio<-student_middling_a_sum/student_middling_sum
+student_middling_a_ratio
+```
+
+
+
+
+```{r}
+student_middling_b_sum<-sum(storytellerB$`Middling +0`)
+student_middling_b_ratio<-student_middling_b_sum/student_middling_sum
+student_middling_b_ratio
+```
+
+```{r}
+student_middling_c_sum<-sum(storytellerC$`Middling +0`)
+student_middling_c_ratio<-student_middling_c_sum/student_middling_sum
+student_middling_c_ratio
+```
+
+
+
+```{r}
+student_middling_d_sum<-sum(storytellerD$`Middling +0`)
+student_middling_d_ratio<-student_middling_d_sum/student_middling_sum
+student_middling_d_ratio
+```
+
+
+
+```{r}
+student_middling_e_sum<-sum(storytellerE$`Middling +0`)
+student_middling_e_ratio<-student_middling_e_sum/student_middling_sum
+student_middling_e_ratio
+```
+
+
+
+
+```{r}
+student_very_behind_sum<-sum(storyteller$`Very Behind -11`)
+student_very_behind_a_sum<-sum(storytellerA$`Very Behind -11`)
+student_very_behind_a_ratio<-student_very_behind_a_sum/student_very_behind_sum
+student_very_behind_a_ratio
+```
+
+
+
+```{r}
+student_very_behind_b_sum<-sum(storytellerB$`Very Behind -11`)
+student_very_behind_b_ratio<-student_very_behind_b_sum/student_very_behind_sum
+student_very_behind_b_ratio
+```
+
+
+
+```{r}
+student_very_behind_c_sum<-sum(storytellerC$`Very Behind -11`)
+student_very_behind_c_ratio<-student_very_behind_c_sum/student_very_behind_sum
+student_very_behind_c_ratio
+```
+
+
+
+```{r}
+student_very_behind_d_sum<-sum(storytellerD$`Very Behind -11`)
+student_very_behind_d_ratio<-student_very_behind_d_sum/student_very_behind_sum
+student_very_behind_d_ratio
+```
+
+
+```{r}
+student_very_behind_e_sum<-sum(storytellerE$`Very Behind -11`)
+student_very_behind_e_ratio<-student_very_behind_e_sum/student_very_behind_sum
+student_very_behind_e_ratio
+```
+
+
+
+```{r}
+school_proportional_cont2 <- data.frame(
+  `Percent of Students very behind` = c(student_very_behind_a_ratio*100, student_very_behind_b_ratio*100, student_very_behind_c_ratio*100, student_very_behind_d_ratio*100, student_very_behind_e_ratio*100),
+  `Percent of Students middling` = c(student_middling_a_ratio*100, student_middling_b_ratio*100, student_middling_c_ratio*100, student_middling_d_ratio*100, student_middling_e_ratio*100),
+  row.names = c("School A", "School B", "School C", "School D", "School E")
+)
+print(school_proportional_cont2)
+```
+
+
+
+
+Attempting to combine the two tables into a single line plot using ggplot so the line colors can be dicated by the school. 
+
+```{r}
+combined_data <- cbind(school_proportional_cont1, school_proportional_cont2)
+
+combined_data_long <- combined_data %>%
+  rownames_to_column("School") %>%
+  pivot_longer(cols = -School, names_to = "Category", values_to = "Percent")
+
+#Need to set the categories to factors in order to get them to list in the appropriate order and make the visual cleaner
+combined_data_long$Category <- factor(combined_data_long$Category, levels = c(
+  "Percent.of.Students.very.behind",
+  "Percent.of.Students.behind",
+  "Percent.of.Students.middling",
+  "Percent.of.Students.completed"
+  
+))
+
+ggplot(combined_data_long, aes(x = Category, y = Percent, color = School, group = School)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "School Performance Metrics",
+       x = "Category",
+       y = "Percent",
+       color = "School") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+Yeah, I like that. It doesn't include all of the variables from the table, but, it is the percentage contributed per school by category in an easy to read format. Im afraid adding all of the variables would increase clutter and decrease readability, so for the sake of readibility excluding Very Ahead (0 count anyway) and More Behind. This doesn't suggest that they are unimportant, just that this is readable. 
+
+
