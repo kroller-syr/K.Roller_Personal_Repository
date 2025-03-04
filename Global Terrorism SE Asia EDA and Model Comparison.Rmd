@@ -1,0 +1,482 @@
+---
+title: "Global Terrorism SE Asia EDA and Model Comparison"
+author: "Kent Roller"
+date: "2024-09-13"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+terror<-read_csv("C:\\Users\\super\\OneDrive\\Desktop\\globalterrorismdb_shorter.csv")
+```
+
+```{r}
+terror_data<-terror[,c(2,7,9,10,11,12,13,16,17,25,26,27,28,29:35,37,38,39,46,47)]
+```
+
+
+```{r}
+terror_se_asia<-terror_data[terror_data$region_txt=="Southeast Asia",]
+terror_se_asia<-terror_se_asia[complete.cases(terror_se_asia),]
+```
+
+
+Now that the data of interest is isolated from the rest of the initial dataset, we can proceed with preparing the data for analysis. Since we are doing Naive Bayes for the first method, we need to convert the non numeric data types to factor to be able to use them with this type of model. 
+```{r}
+terror_se_asia1<-terror_se_asia %>% 
+  mutate(across(c(country_txt, region_txt,provstate,city, location, attacktype1_txt,targtype1_txt,summary, targsubtype1,corp1, target1, motive, weaptype1_txt, gname, targsubtype1_txt, attacktype1,targtype1, natlty1,weapsubtype1), factor))
+```
+Now need to make factors into numeric values in order to use with the naive bayes model 
+```{r}
+terror_se_asia2 <- terror_se_asia1 %>%
+  mutate(across(c(country_txt, region_txt, provstate, city, 
+                  attacktype1_txt, targsubtype1_txt, natlty1, 
+                  weaptype1_txt, weapsubtype1), ~ as.numeric(as.factor(.))))
+```
+
+
+
+Now need to seperate the predictor and reponse variables
+```{r}
+response<-terror_se_asia2$gname
+predictors<-terror_se_asia2 %>%
+  select(iyear, country_txt,provstate,city,  attacktype1_txt, success, suicide, guncertain1, weaptype1_txt, weapsubtype1,targsubtype1_txt)
+```
+
+
+
+```{r}
+predictors<-na.omit(predictors)
+```
+
+Need to normalize the data before using it in naive bayes
+```{r}
+numeric_vars <- sapply(predictors, is.numeric)
+predictors[numeric_vars] <- scale(predictors[numeric_vars])
+```
+
+Now run PCA analysis in order to get an idea of where to start with 
+feature selection in the model 
+```{r}
+library(FactoMineR)
+pca_result <- PCA(predictors, graph = FALSE)
+
+#Make a plot of the results for visualization of the selection #process
+library(factoextra)
+fviz_pca_var(pca_result,
+             col.var = "contrib", 
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE)  
+```
+
+
+In addition to the above plot we can additionally make a scree plot 
+and a bar plot that show the variance explained by each variable. 
+
+```{r}
+#Scree plot
+fviz_eig(pca_result, addlabels = TRUE, ylim = c(0, 50)) +
+  ggtitle("Scree Plot: Variance Explained by Principal Components")
+```
+
+
+```{r}
+fviz_contrib(pca_result, choice = "var", axes = 1, top = 10) +
+  ggtitle("Top 10 Variable Contributions to PC1")
+```
+
+
+Because the dimensions of our data are already fairly small, 
+we will not proceed with trimming of the data here, instead 
+opting to use the full size of the data we currently have. 
+We will however create an 80/20 split where 80% of the data 
+will be used for the training an 20% used for the test data
+
+```{r}
+library(e1071)
+library(caret)
+set.seed(42)
+index<-createDataPartition(response, p=0.8, list=FALSE)
+pca_data<-as.data.frame(pca_result$ind$coord)
+train_data<-pca_data[index,]
+test_data<-pca_data[-index,]
+train_labels<-response[index]
+test_labels<-response[-index]
+
+```
+Now to train the model and check the results via 
+```{r}
+nb_model1<-naiveBayes(train_data, as.factor(train_labels))
+nb_predictions1<-predict(nb_model1, test_data)
+
+#Create a confusion matrix to examine model performance 
+conf_matrix<-confusionMatrix(nb_predictions1, as.factor(test_labels))
+overall_accuracy<-conf_matrix$overall['Accuracy']
+print(overall_accuracy)
+```
+
+Not great performance, but perhaps we can acheive higher numbers by altering the number of components used in the analysis
+
+```{r}
+#Reset model to use different number of principle components
+pca_result1<-PCA(predictors, ncp=11, graph=FALSE)
+pca_data1<-as.data.frame(pca_result1$ind$coord)
+train_data<-pca_data1[index,]
+test_data<-pca_data1[-index,]
+train_labels<-response[index]
+test_labels<-response[-index]
+nb_model2<-naiveBayes(train_data, as.factor(train_labels))
+nb_predictions2<-predict(nb_model2, test_data)
+
+#Create a confusion matrix to examine model performance 
+conf_matrix<-confusionMatrix(nb_predictions2, as.factor(test_labels))
+overall_accuracy<-conf_matrix$overall['Accuracy']
+print(overall_accuracy)
+```
+Minimal accuracy improvement from using all 11 component listed in the intial graph
+
+```{r}
+pca_result1<-PCA(predictors, ncp=6, graph=FALSE)
+pca_data1<-as.data.frame(pca_result1$ind$coord)
+train_data<-pca_data1[index,]
+test_data<-pca_data1[-index,]
+train_labels<-response[index]
+test_labels<-response[-index]
+nb_model2<-naiveBayes(train_data, as.factor(train_labels))
+nb_predictions2<-predict(nb_model2, test_data)
+
+#Create a confusion matrix to examine model performance 
+conf_matrix<-confusionMatrix(nb_predictions2, as.factor(test_labels))
+overall_accuracy<-conf_matrix$overall['Accuracy']
+print(overall_accuracy)
+```
+Here we lose what little accuracy was gained 
+
+```{r}
+pca_result1<-PCA(predictors, ncp=8, graph=FALSE)
+pca_data1<-as.data.frame(pca_result1$ind$coord)
+train_data<-pca_data1[index,]
+test_data<-pca_data1[-index,]
+train_labels<-response[index]
+test_labels<-response[-index]
+nb_model2<-naiveBayes(train_data, as.factor(train_labels))
+nb_predictions2<-predict(nb_model2, test_data)
+
+#Create a confusion matrix to examine model performance 
+conf_matrix<-confusionMatrix(nb_predictions2, as.factor(test_labels))
+overall_accuracy<-conf_matrix$overall['Accuracy']
+print(overall_accuracy)
+```
+
+
+
+
+```{r}
+pca_result1<-PCA(predictors, ncp=4, graph=FALSE)
+pca_data1<-as.data.frame(pca_result1$ind$coord)
+train_data<-pca_data1[index,]
+test_data<-pca_data1[-index,]
+train_labels<-response[index]
+test_labels<-response[-index]
+nb_model2<-naiveBayes(train_data, as.factor(train_labels))
+nb_predictions2<-predict(nb_model2, test_data)
+
+#Create a confusion matrix to examine model performance 
+conf_matrix<-confusionMatrix(nb_predictions2, as.factor(test_labels))
+overall_accuracy<-conf_matrix$overall['Accuracy']
+print(overall_accuracy)
+```
+
+
+We had the highest accuracy when the number of components selected was set to 8. But can we increase it any further if utilize k fold cross validation in with the rest of the testing methods?
+
+#Ran into errors attempting to perform with CV
+
+Since we ran into errors with the CV we will move on to the next model method, which is the SVM or support vector machines. Previously changing over to this method resulted in higher performance when compared to the naive bayes model. With any luck, that pattern of behavior will be replicated here as well. We will create data partitions for the data, and indeed many of the preprocessing steps for the initial stages of SVM are similar to those in naive bayes. 
+
+
+```{r}
+#Note that here the pca_data that was used to create the train_data
+# this was rerun to ensure that there were 11 variables in the data
+# (those that were able to be formatted correctly for the model)
+set.seed(42)
+index<-createDataPartition(train_labels, p=0.8,list=FALSE)
+train_data<-train_data[index, ]
+test_data<-train_data[-index,]
+train_labels<-train_labels[index]
+test_labels<-train_labels[-index]
+```
+
+```{r}
+#Train the model
+svm_model1<-svm(as.factor(train_labels)~.,
+                data=data.frame(train_data,train_labels),
+                kernel="radial")
+#Create predictions 
+svm_pred1<-predict(svm_model1, test_data)
+
+#Make confusion matrix to see accuracy of model
+confus_matrix<-confusionMatrix(svm_pred1, as.factor(test_labels))
+
+#Print
+print(confus_matrix$overall['Accuracy'])
+```
+
+
+The performance exhibited by the model is poor and not much better than that achieved using the naive bayes method. Instead we will need to try and binarize the dataset and then rerun the model to see if performance is improved by doing this. 
+```{r}
+#Create dummy variables for dataset in order to store binarized data
+dummies_model<-dummyVars(~.,data=train_data)
+train_data_binarized<-predict(dummies_model, newdata=train_data)
+
+#Need to customize the binarization logic here. 
+# Unlike in the assignment we are not working with pixels with two 
+# values being on or off. Instead we have a wide array of values for 
+# each variable. What we will try instead is to perform the  
+# binarization using the median value of each variable
+# HOWEVER 
+# It should be noted that this may heavily skew the ouput towards 
+# only one group type, attack type, etc as the median 
+# may be the group most active overall. 
+# As such any values obtained here should be viewed as a 
+# showcase of the technique and not a proper output of data
+
+#Binarize the numeric variables
+# Binarize each column based on its median
+train_data_binarized <- as.data.frame(train_data_binarized)
+
+# Apply the median-based binarization for each column
+for (col in names(train_data_binarized)) {
+  threshold <- median(train_data_binarized[[col]], na.rm = TRUE)
+  train_data_binarized[[col]] <- ifelse(train_data_binarized[[col]] > threshold, 1, 0)
+}
+```
+
+
+Now need to split the data as before and make test and training sets with the binarized data
+```{r}
+index <- createDataPartition(train_labels, p = 0.8, list = FALSE)
+train_data <- train_data_binarized[index, ]
+test_data <- train_data_binarized[-index, ]
+train_labels <- train_labels[index]
+test_labels <- train_labels[-index]
+```
+
+Create the SVM model using the binarized data
+```{r}
+svm_model2<- svm(as.factor(train_labels) ~ ., 
+                 data = data.frame(train_data, train_labels),
+                 kernel = "radial")
+```
+
+
+Make predictions and then print out confusion matrix
+```{r}
+svm_pred2<-predict(svm_model2, test_data)
+
+confus_matrix1<-confusionMatrix(svm_pred2, as.factor(test_labels))
+print(confus_matrix1$overall['Accuracy'])
+```
+
+```{r}
+# Step 1: Check the length of train and test labels before splitting
+cat("Length of train labels: ", length(train_labels), "\n")
+cat("Length of test labels: ", length(test_labels), "\n")
+
+# Step 2: Check the length of train and test data
+cat("Rows in train data: ", nrow(train_data), "\n")
+cat("Rows in test data: ", nrow(test_data), "\n")
+
+# Step 3: Train the SVM model
+svm_model <- svm(as.factor(train_labels) ~ ., 
+                 data = data.frame(train_data, train_labels),
+                 kernel = "radial")
+
+# Step 4: Make predictions on the test data
+svm_predictions <- predict(svm_model, test_data)
+
+# Step 5: Check the lengths of predictions and test labels
+cat("Length of SVM predictions: ", length(svm_predictions), "\n")
+cat("Length of test labels: ", length(test_labels), "\n")
+
+# Step 6: Evaluate the model performance (only proceed if lengths match)
+if (length(svm_predictions) == length(test_labels)) {
+  confusion_matrix <- confusionMatrix(svm_predictions, as.factor(test_labels))
+  print(confusion_matrix)
+} else {
+  cat("Error: Length mismatch between predictions and test labels\n")
+}
+```
+
+
+
+```{r}
+index <- createDataPartition(train_labels, p = 0.7, list = FALSE)
+
+# Split both the data and labels using the same index
+train_data <- train_data_binarized[index, ]
+test_data <- train_data_binarized[-index, ]
+train_labels <- train_labels[index]
+test_labels <- train_labels[-index]
+
+# Now train and test sets should have consistent lengths
+cat("Rows in train data: ", nrow(train_data), "\n")
+cat("Rows in test data: ", nrow(test_data), "\n")
+cat("Length of train labels: ", length(train_labels), "\n")
+cat("Length of test labels: ", length(test_labels), "\n")
+```
+
+
+```{r}
+# Step 2: Train the SVM model without cross-validation
+svm_model <- svm(as.factor(train_labels) ~ ., 
+                 data = data.frame(train_data, train_labels),
+                 kernel = "radial")
+
+# Step 3: Make predictions on the test data
+svm_predictions <- predict(svm_model, test_data)
+
+# Step 4: Check that the lengths of predictions and test labels are now consistent
+cat("Length of SVM predictions: ", length(svm_predictions), "\n")
+cat("Length of test labels: ", length(test_labels), "\n")
+
+# Step 5: Evaluate the model performance
+confusion_matrix <- confusionMatrix(svm_predictions, as.factor(test_labels))
+print(confusion_matrix)
+```
+
+
+```{r}
+index <- createDataPartition(train_labels, p = 0.7, list = FALSE)
+
+# Step 2: Use the same index to split both the data and labels
+train_data <- train_data_binarized[index, ]
+test_data <- train_data_binarized[-index, ]
+train_labels <- train_labels[index]
+test_labels <- train_labels[-index]
+
+# Step 3: Check if the data and labels are split correctly
+cat("Rows in train data: ", nrow(train_data), "\n")
+cat("Rows in test data: ", nrow(test_data), "\n")
+cat("Length of train labels: ", length(train_labels), "\n")
+cat("Length of test labels: ", length(test_labels), "\n")
+```
+
+```{r}
+cat("Missing values in train data: ", sum(is.na(train_data)), "\n")
+cat("Missing values in test data: ", sum(is.na(test_data)), "\n")
+
+# If missing values are found, remove rows with missing data
+train_data <- na.omit(train_data)
+test_data <- na.omit(test_data)
+
+# Ensure that train_labels and test_labels still match after handling missing values
+train_labels <- train_labels[complete.cases(train_data)]
+test_labels <- test_labels[complete.cases(test_data)]
+```
+
+```{r}
+svm_model <- svm(as.factor(train_labels) ~ ., 
+                 data = data.frame(train_data, train_labels),
+                 kernel = "radial")
+
+# Make predictions on the test data
+svm_predictions <- predict(svm_model, test_data)
+
+# Check if the lengths of predictions and test labels now match
+cat("Length of SVM predictions: ", length(svm_predictions), "\n")
+cat("Length of test labels: ", length(test_labels), "\n")
+
+# Evaluate the model performance
+if (length(svm_predictions) == length(test_labels)) {
+  confusion_matrix <- confusionMatrix(svm_predictions, as.factor(test_labels))
+  print(confusion_matrix$overall['Accuracy'])
+} else {
+  cat("Error: Length mismatch between predictions and test labels\n")
+}
+```
+
+```{r}
+svm_model <- svm(as.factor(train_labels) ~ ., 
+                 data = data.frame(train_data, train_labels),
+                 kernel = "sigmoid")
+
+# Make predictions on the test data
+svm_predictions <- predict(svm_model, test_data)
+
+# Check if the lengths of predictions and test labels now match
+cat("Length of SVM predictions: ", length(svm_predictions), "\n")
+cat("Length of test labels: ", length(test_labels), "\n")
+
+# Evaluate the model performance
+if (length(svm_predictions) == length(test_labels)) {
+  confusion_matrix <- confusionMatrix(svm_predictions, as.factor(test_labels))
+  print(confusion_matrix$overall['Accuracy'])
+} else {
+  cat("Error: Length mismatch between predictions and test labels\n")
+}
+```
+
+```{r}
+svm_model <- svm(as.factor(train_labels) ~ ., 
+                 data = data.frame(train_data, train_labels),
+                 kernel = "polynomial")
+
+# Make predictions on the test data
+svm_predictions <- predict(svm_model, test_data)
+
+# Check if the lengths of predictions and test labels now match
+cat("Length of SVM predictions: ", length(svm_predictions), "\n")
+cat("Length of test labels: ", length(test_labels), "\n")
+
+# Evaluate the model performance
+if (length(svm_predictions) == length(test_labels)) {
+  confusion_matrix <- confusionMatrix(svm_predictions, as.factor(test_labels))
+  print(confusion_matrix$overall['Accuracy'])
+} else {
+  cat("Error: Length mismatch between predictions and test labels\n")
+}
+```
+
+
+
+This is bad, and reflects a lack of the model to process the data as is. A different approach to preprocessing may yield more favorable results, but at this point I am curious as to how linear regression would handle such a problem in comparison. 
+
+```{r}
+terror_se_asia3<-terror_se_asia2 %>% 
+  mutate(across(where(is.character), as.factor))
+
+log_mod<-glm(gname~.,data=terror_se_asia3, family=binomial)
+
+summary(log_mod)
+```
+
+
+```{r}
+null_model <- glm(gname ~ 1, data = terror_se_asia3, family = binomial)
+anova(null_model, log_mod, test = "Chisq")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
