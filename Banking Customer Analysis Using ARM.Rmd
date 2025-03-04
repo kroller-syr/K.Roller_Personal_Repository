@@ -1,0 +1,366 @@
+---
+title: "Banking ARM"
+author: "Kent Roller"
+date: "2024-07-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#file.choose()
+```
+
+Reading in the data file after selecting the location using file.choose()
+```{r}
+bank<-read.csv("C:\\Users\\super\\Downloads\\bank_data.csv", na.string=c(''))
+```
+
+Looking at the data frame
+```{r}
+str(bank)
+```
+
+Checking the data for NAs
+```{r}
+colSums(is.na(bank))
+```
+
+OK, so no NA values are in the data set, so we can proceed to the next step. 
+
+The next step being it looks like there are a lot of inappropriate data types in our dataset. ID is probably not going to be of use to us so we can remove it completely as identifying who the particular stat belongs to doesnt help us. Additionally, many variables need to be converted to factors instead of being stored as int or chr as they are currently. 
+
+
+Removing the id field 
+```{r}
+bank<-bank[,-1]
+```
+
+
+Converting the chr variables over to factor as required 
+Going to use pipes as its easier than not using pipes
+Loading the dplyr package inside the tidyverse package 
+
+```{r}
+library(tidyverse)
+bank<-bank %>% mutate(
+  gender=as.factor(gender),
+  married=as.factor(married),
+  car=as.factor(car),
+  savings_acct=as.factor(savings_acct),
+  current_acct=as.factor(current_acct),
+  mortgage=as.factor(mortgage),
+  pep=as.factor(pep),
+  region=as.factor(region)
+  
+)
+
+str(bank)
+```
+
+Changing children from an int to an ordered varibale 
+```{r}
+bank<-bank %>% mutate(
+  children=as.ordered(children)
+)
+```
+
+
+We need to discretize the variables age and income since we are performing ARM, and continous variables are not allowed in ARM analysis. BUT, before we do that, lets make a quick histogram to see the distribution of each varibale to get an idea of where the cut offs would make the most sense. 
+```{r}
+hist(bank$age, main=("Histogram of Customer Income"))
+hist(bank$income)
+```
+
+Looking at the histograms we can get a better idea of how to split the data in a way that makes sense for the data we are currently working with as opposed to using a rule of thumb measure. 
+```{r}
+bank<-bank %>% mutate(
+  age=cut(age,breaks=c(0,25,35,45,55,Inf), labels=c("0-18","19-35", "36-45","46-55","56+"))
+)
+
+bank<-bank %>% mutate(
+  income=cut(income,breaks = c(0,15000,30000,45000,55000,Inf), labels=c("0-15k", "15-30k", "30-45k", "45-55k", "56k+"))
+)
+```
+
+
+Some exploratory visualizations to get some insight into the data.
+
+```{r}
+car_ownership<-ggplot(bank,aes(x=car,fill=age)) +
+  geom_bar(position="dodge") +
+  ggtitle("Car Ownership by Age group")+
+  xlab("Owns Car No/Yes")+
+  ylab("Ownership Count")
+  theme_minimal()
+  
+  car_ownership
+```
+
+Interesting shape, also interesting that more 0-35yr olds dont own a car versus the amount that do, and then the dip in the 46-55 year olds, can this solely be attributed to the dip in the data we saw in the age histogram or is there something else to this behavior?
+
+
+
+```{r}
+library(wesanderson)
+mortgage_ownership<-ggplot(bank,aes(x=mortgage,fill=age)) +
+  geom_bar(position="dodge") +
+  ggtitle("Mortgage by Age group")+
+  xlab("Age Group")+
+  ylab("Mortgage Count")+
+  scale_fill_manual(values=wes_palette("Darjeeling2"))+
+  theme_minimal()
+  
+  mortgage_ownership
+```
+
+
+Unsurprisngly the amount of people who dont have a mortgage is greater than the number of people that dont. 
+
+Hmm, I wonder what a graph of car ownership versus mortgage looks like....
+
+
+
+
+```{r}
+#Making a new variable to store the condition we want to examine, using pipes to perform mutate, storing in new variable to prevent modification to cleaned data
+bank1 <- bank %>%
+  mutate(both_mortgage_car = case_when(
+    mortgage == "YES" & car == "YES" ~ "YES for Both",
+    mortgage == "NO" & car == "NO" ~ "NO for Both",
+    TRUE ~ "Other"
+  ))
+
+#Filtering out cases that were not true or false for BOTH
+bank_filtered <- bank1 %>%
+  filter(both_mortgage_car %in% c("YES for Both", "NO for Both"))
+
+#GGplot of the new variable
+ggplot(bank_filtered, aes(x = age, fill = both_mortgage_car)) +
+  geom_bar(position = "dodge") +
+  ggtitle("Comparison of Mortgage and Car Ownership by Age") +
+  xlab("Age Group") +
+  ylab("Count") +
+  scale_fill_manual(values = wes_palette("Royal1")) +
+  theme_minimal()
+```
+
+
+
+One thing that would be worth considering is the location of where the data was collected, as based on the demographics of the location where this data was collected this information could shift drastically. It is important to note this before drawing broad conclusions about a wider population, as this may represent one locale or county but may not be represenative of a wider range. Food for thougt. 
+
+We can also look at the age distrubition of married as well as income and account information 
+
+```{r}
+marriage_by_age<-ggplot(bank,aes(x=married,fill=age)) +
+  geom_bar(position="dodge") +
+  ggtitle("Marriage by Age group")+
+  xlab("Age Group")+
+  ylab("Married Count")+
+  scale_fill_manual(values=wes_palette("FantasticFox1"))+
+  theme_minimal()
+  
+  marriage_by_age
+```
+
+
+```{r}
+income_by_age<-ggplot(bank,aes(x=income,fill=age)) +
+  geom_bar(position="dodge") +
+  ggtitle("Income by Age group")+
+  xlab("Income Grouping")+
+  ylab("Count by Age Group")+
+  scale_fill_manual(values=wes_palette("Moonrise3"))+
+  theme_minimal()
+  
+  income_by_age
+```
+
+
+
+
+```{r}
+savings_by_age<-ggplot(bank,aes(x=savings_acct,fill=age)) +
+  geom_bar(position="dodge") +
+  ggtitle("Savings by Age group")+
+  xlab("Saving Account No/Yes")+
+  ylab("Count by Age Group")+
+  scale_fill_manual(values=wes_palette("Zissou1"))+
+  theme_minimal()
+  
+  savings_by_age
+```
+
+
+
+
+```{r}
+mortgage_by_region<-ggplot(bank,aes(x=mortgage,fill=region)) +
+  geom_bar(position="dodge") +
+  ggtitle("Mortgage by Region")+
+  xlab("Mortgage No/Yes")+
+  ylab("Count by Age Group")+
+  scale_fill_manual(values=wes_palette("Zissou1"))+
+  theme_minimal()
+  
+  mortgage_by_region
+```
+
+Intersting, as expected, the rental rate seems to be higher than the mortgage rate in the inner city, however, there also seems to be a decent gap between the yes and no's in all regions not just those concentrated in the inner city which suggest, in this area at least, that home rentals or multi family households are more common than owned single family homes. I do wonder if this dataset has duplicate in terms of the same married couple, where one answered yes they owned their home and the other answered no, their spouse owned the home. But even if this was the case this would most likely be so neglible as to not have an affect on the overall data. 
+
+```{r}
+child_savings_count<-ggplot(bank,aes(x=savings_acct,fill=children)) +
+  geom_bar(position="dodge") +
+  ggtitle("Savings by Child Count")+
+  xlab("Savings No/Yes")+
+  ylab("Count by Group")+
+  scale_fill_manual(values=wes_palette("Moonrise2"))+
+  theme_minimal()
+  
+ child_savings_count
+```
+
+
+Hmmm, I wonder what this looks like with age included
+```{r}
+child_savings_count2<- ggplot(bank,aes(x=savings_acct,fill=children)) + geom_bar(position="dodge") +
+  ggtitle("Savings by Child Count")+
+  xlab("Savings No/Yes")+
+  ylab("Count by Group")+
+  scale_fill_manual(values=wes_palette("Moonrise2"))+
+  theme_minimal()+
+  facet_wrap(~age)
+  
+ child_savings_count2
+```
+
+
+
+Enough plots. Time to ARM. 
+```{r}
+library(arules)
+transactions<-as(bank,"transactions")
+freq_plot<-itemFrequencyPlot(transactions, topN=20, type="absolute", main=("Relative Item Frequency Plot"), col=wes_palette("BottleRocket2"))
+```
+
+
+```{r}
+library(arm)
+rules_pep<-apriori(transactions, parameter=list(supp=0.002, conf=0.05))
+rules_pep<-sort(rules_pep, decreasing = TRUE, by="lift")
+head(rules_pep)
+```
+```{r}
+inspect(rules_pep[1:10])
+```
+
+```{r}
+rules_pep1<-apriori(transactions, parameter=list(supp=0.05, conf=0.05))
+rules_pep1<-sort(rules_pep, decreasing = TRUE, by="lift")
+head(rules_pep1)
+```
+
+
+```{r}
+inspect(rules_pep1[1:10])
+```
+Oh yeah
+
+```{r}
+library(arulesViz)
+min_support<-0.01
+min_conf<-0.6
+min_lift<-1.2
+rules3<-apriori(transactions, parameter=list(support=min_support,confidence=min_conf, minlen=2 ))
+rules3<-subset(rules3, lift>min_lift)
+plot(rules3, method="graph", control=list(type="items"))
+```
+
+```{r}
+inspect(sort(rules3, by="confidence")[1:10])
+```
+OK, but need to set it to look for combinations that lead to PEP==YES
+
+```{r}
+min_support<-0.01
+min_conf<-0.6
+min_lift<-1.2
+rules3<-apriori(transactions, parameter=list(support=min_support,confidence=min_conf, minlen=2), appearance = list(rhs=c("pep=YES"), default="lhs"))
+rules3<-subset(rules3, lift>min_lift)
+plot(rules3, method="graph", control=list(type="items"))
+```
+
+
+```{r}
+inspect(head(rules3))
+```
+
+
+```{r}
+inspect(sort(rules3, by="confidence")[1:10])
+```
+
+
+
+```{r}
+min_support<-0.05
+min_conf<-0.6
+min_lift<-1.2
+rules3<-apriori(transactions, parameter=list(support=min_support,confidence=min_conf, minlen=2), appearance = list(rhs=c("pep=YES"), default="lhs"))
+rules3<-subset(rules3, lift>min_lift)
+plot(rules3, method="graph", control=list(type="items"))
+```
+
+```{r}
+inspect(sort(rules3, by="confidence")[1:10])
+```
+```{r}
+def<-sort(rules3, by="confidence")[1:9]
+plot(def, method="graph", control=list(type="items"))
+```
+
+
+
+```{r}
+min_support<-0.08
+min_conf<-0.5
+min_lift<-1.2
+rules3<-apriori(transactions, parameter=list(support=min_support,confidence=min_conf, minlen=2), appearance = list(rhs=c("pep=YES"), default="lhs"))
+rules3<-subset(rules3, lift>min_lift)
+plot(rules3, method="graph", control=list(type="items"))
+```
+This whole time I have been sorting by confidence instead of support....sigh. Good.
+```{r}
+inspect(sort(rules3, by="support")[1:10])
+```
+
+```{r}
+def<-sort(rules3, by="support")[1:9]
+plot(def, method="graph", control=list(type="items"))
+```
+
+Pretty similar results to what is shown in the hw3-hints-pollard file so should have just sorted by support I probably could have moved to the next step instead of wasting my time. 
+
+
+```{r}
+str(bank)
+```
+
+
+
+```{r}
+bank2<-read.csv("C:\\Users\\super\\Downloads\\bank_data.csv", na.string=c(''))
+```
+
+
+```{r}
+bank2$age<-as.numeric(bank2$age)
+hist(bank2$age, main=("Histogram of Customer Age"), ylab=("Count"), xlab=("Age of Customer"))
+hist(bank2$income, main=("Histogram of Customer Income"), ylab=("Count"), xlab=("Annual Income in USD"))
+```
+
+
+
+
