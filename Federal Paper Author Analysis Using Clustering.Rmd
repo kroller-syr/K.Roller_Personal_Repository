@@ -1,0 +1,289 @@
+---
+title: "Federal Paper Author Analysis Using Clustering"
+author: "Kent Roller"
+date: "2024-08-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#Using file.choose() to pick the location of the downloaded file
+#then commenting out the command so it doesn't run on knit
+#file.choose()
+```
+
+Reading in the file using readr
+```{r}
+fed_papers<-read.csv("C:\\Users\\super\\Downloads\\fedPapers85.csv")
+```
+
+Hmmm...this may not be the proper data format for the intended analysis. 
+Although...it appear this dimensionality difference may be due to the 
+pre-cleaning already being performed. Iirc this is the case with this data so will attempt analysis without modification and depending on the results come back...but thats a lot of words missing if its trimmed down to these 72 words.
+
+Need to load in various libraries. 
+```{r}
+library(quanteda)
+library(SnowballC)
+library(arulesViz)
+library(proxy)
+library(tidyverse)
+library(cluster)
+library(stringi)
+library(Matrix)
+
+#need to install a couple
+library(wordcloud)
+library(tm)
+library(slam)
+library(factoextra)
+library(mclust)
+```
+
+Check to make sure fed_papers is in df format
+```{r}
+str(fed_papers)
+```
+Ok, its already a data frame...may need to make a matrix for different calculations but will proceed to next step
+
+Word Cloud functional? 
+```{r}
+fed_papers_wc<-wordcloud(colnames(fed_papers), max.words = 20)
+fed_papers_wc
+```
+Oh yeah, need to make a corpus first....
+```{r}
+fed_text<-fed_papers_dtm
+fed_corpus<-Corpus(VectorSource(fed_text))
+#Matrix time 
+dtm<-TermDocumentMatrix(fed_corpus)
+fed_matrix<-as.matrix(dtm)
+fed_word_freq<-sort(rowSums(fed_matrix), decreasing = TRUE)
+
+
+```
+
+
+```{r}
+fed_text<-fed_papers_dtm
+fed_corpus<-Corpus(VectorSource(fed_text))
+dtm2<-TermDocumentMatrix(fed_corpus)
+fed_matrix2<-as.matrix(dtm2)
+fed_word_freq2<-sort(rowSums(fed_matrix2), decreasing=TRUE)
+fed_word_data<-data.frame(word=names(fed_word_freq2), freq=fed_word_freq2)
+
+```
+
+
+```{r}
+colorz2<-brewer.pal(8,"Dark2")
+wordcloud(words=fed_word_data$word, 
+          freq=fed_word_data$freq,
+          max.words=100, 
+          colors=colorz2)
+```
+Ahahaha, crap.
+
+Apparently I need to review a previous quarters project where I created a word cloud for the project but evidently have forgotten how to do it. I know its because I am messing up the corpus and not creating it correctly, but thats enough time wasted, need to work on clustering not word clouds, so.
+Oh, wait.... its because I am working with the pre-filtered data with the word count ratios already generated, so I would need to get the orginal dataset and make a corpus with that first instead of this because if I use this data set I will just get ratios. At least I believe this to be the case. Should have just got the raw version and started with it.The more you know... Ok. Onward.
+
+
+```{r}
+fed_papers_k<-fed_papers[,2:72]
+```
+
+
+```{r}
+fed_papers_k<-fed_papers_k[,2:71]
+```
+
+```{r}
+
+fed_papers_k[,1]<-NULL
+step1<-fviz_nbclust(fed_papers, FUN=hcut, method="wss")
+step2<-fviz_nbclust(fed_papers, FUN=hcut, method="silhouette")
+step2
+```
+
+
+```{r}
+step1
+```
+
+
+OK, performed test for optimal number of clusters using two seperate 
+methods, using wss and silhouette. 
+
+
+Setting a seed for replication of results
+```{r}
+set.seed(42)
+```
+
+
+Running K means
+```{r}
+clusters<-kmeans(fed_papers_k, 6)
+fed_papers_k$clusters<-as.factor(clusters$cluster)
+str(clusters)
+clusters$centers
+```
+
+
+
+
+
+```{r}
+fed_papers2<-fed_papers
+fed_papers_k2<-fed_papers2
+fed_papers_k2$clusters<-as.factor(clusters$cluster)
+
+```
+
+
+```{r}
+clusplot(fed_papers_k, fed_papers_k$clusters, color=TRUE, shade=TRUE, labels=0, lines=0)
+
+ggplot(data=fed_papers_k2, aes(x=author, fill=clusters))+
+  geom_bar(stat = "count") +
+  labs(title="K=6 Clustering Chart")+
+  theme(plot.title=element_text(hjust=0.5), text=element_text(size=15))
+
+```
+
+
+
+
+```{r}
+clusters<-kmeans(fed_papers_k, 10)
+fed_papers_k$clusters<-as.factor(clusters$cluster)
+str(clusters)
+fed_papers2<-fed_papers
+fed_papers_k2<-fed_papers2
+fed_papers_k2$clusters<-as.factor(clusters$cluster)
+clusplot(fed_papers_k, fed_papers_k$clusters, color=TRUE, shade=TRUE, labels=0, lines=0)
+
+ggplot(data=fed_papers_k2, aes(x=author, fill=clusters))+
+  geom_bar(stat = "count") +
+  labs(title="K=10 Clustering Chart")+
+  theme(plot.title=element_text(hjust=0.5), text=element_text(size=15))
+```
+
+
+
+```{r}
+clusters<-kmeans(fed_papers_k, 2)
+fed_papers_k$clusters<-as.factor(clusters$cluster)
+str(clusters)
+fed_papers2<-fed_papers
+fed_papers_k2<-fed_papers2
+fed_papers_k2$clusters<-as.factor(clusters$cluster)
+clusplot(fed_papers_k, fed_papers_k$clusters, color=TRUE, shade=TRUE, labels=0, lines=0)
+
+ggplot(data=fed_papers_k2, aes(x=author, fill=clusters))+
+  geom_bar(stat = "count") +
+  labs(title="K=10 Clustering Chart")+
+  theme(plot.title=element_text(hjust=0.5), text=element_text(size=15))
+```
+
+```{r}
+clusters<-kmeans(fed_papers_k, 8)
+fed_papers_k$clusters<-as.factor(clusters$cluster)
+str(clusters)
+fed_papers2<-fed_papers
+fed_papers_k2<-fed_papers2
+fed_papers_k2$clusters<-as.factor(clusters$cluster)
+clusplot(fed_papers_k, fed_papers_k$clusters, color=TRUE, shade=TRUE, labels=0, lines=0)
+
+ggplot(data=fed_papers_k2, aes(x=author, fill=clusters))+
+  geom_bar(stat = "count") +
+  labs(title="K=8 Clustering Chart")+
+  theme(plot.title=element_text(hjust=0.5), text=element_text(size=15))
+```
+
+
+
+Heirachical Clustering 
+
+
+
+
+```{r}
+fed_papers_hac<-fed_papers[,c(2:72)]
+```
+
+```{r}
+rownames(fed_papers_hac)<-fed_papers_hac[,1]
+fed_papers_hac[,1]<-NULL
+
+```
+
+
+
+```{r}
+distance1<-dist(fed_papers_hac, method="euclidean")
+distance2<-dist(fed_papers_hac, method="maximum")
+distance3<-dist(fed_papers_hac, method="manhattan")
+distance4<-dist(fed_papers_hac, method="canberra")
+distance5<-dist(fed_papers_hac, method="binary")
+#distance6<-dist(fed_papers_hac, method="minkowski")
+```
+
+
+```{r}
+hac1<-hclust(distance1, method="complete")
+plot(hac1, cex=0.6, hang=-1)
+rect.hclust(hac1, k=6, border=2:5)
+```
+
+
+
+```{r}
+hac2<-hclust(distance2, method="complete")
+plot(hac2, cex=0.6, hang=-1)
+rect.hclust(hac2, k=6, border=2:5)
+```
+
+
+
+
+
+```{r}
+hac3<-hclust(distance3, method="complete")
+plot(hac3, cex=0.6, hang=-1)
+rect.hclust(hac3, k=6, border=2:5)
+```
+
+
+
+
+
+
+```{r}
+hac4<-hclust(distance4, method="complete")
+plot(hac4, cex=0.6, hang=-1)
+rect.hclust(hac4, k=6, border=2:5)
+```
+
+
+```{r}
+hac5<-hclust(distance5, method="complete")
+plot(hac5, cex=0.6, hang=-1)
+rect.hclust(hac5, k=6, border=2:5)
+```
+
+
+
+
+
+```{r}
+head(fed_papers)
+```
+
+
+
+
+
