@@ -1,0 +1,555 @@
+---
+title: "Handwritten Number Analysis Using Various Models"
+author: "Kent Roller"
+date: "2024-08-30"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r}
+library(sqldf)
+library(ggplot2)
+library(class)
+library(e1071)
+library(randomForest)
+```
+
+## Introduction \newline 
+
+  Previously, decision trees and naive bayes were selected as means by which to model a data set consisting of handwritten numbers. During the report, both means were examined in terms of their accuracy as it related to predictions in the data set. It was found that naive bayes performed signigicantly better than decision trees in this particular application, with the least amount of modification. However, there was still room for improverment, as the highest accuracy acheived was ~85%. Here, the aim is to explore additional methods to see if this increase can be obtained using another box with more or less out of the box settings, or in other words, with minimal tuning of the parameters of the model, and minimal modifications to the data set itself. Using this method, the overall accuracy of the resulting models will be compared amongst themselves as well as with the methods previously used. \newline 
+
+## Analysis and Models 
+  Before diving into the data, a breif introduction to the models being used and the methods they use to arrive at their estimates. \newline
+
+#### kNN: \newline 
+K Nearest Neighbors or kNN, is yet another type of classification technique that can be used to attempt to solve this particular type of problem. KNN is referred to as a lazy learner, as it does not build a model during the training phase like other models used so far. To classify or apply labels to observations, kNN calculates the distance between the new instance (the test set) and all of the data in the training set. These distance measures can vary and include previously discussed metrics such as Euclidean or Manhattan distances. KNN then identifies which data are "closest" to the new data introduced in the test set using the training set, and those instances deemed close are considered "nearest neighbors". The value of k can be tuned to increase or reduce the amount of "neighbors" to consider in this distance measure. Unfortunately due to its need to calculate the distance for every observation in the test set, this method can be computationally expensive on large data sets. As such, proper dimensionality reduction should be considered before using kNN.\newline 
+
+#### SVM
+Support Vector Machines or SVM is a type of classifier that searches for a separating hyperplane with the largest margin, earning it the nickname the maximal marginal classifier. Essentially, the data is divided into segments, and the hyperplane functions as a line that divides these segments from one another, creating classes out of the segments. The distance for each observation to the hyperplane can be expressed, and then, when taken into account with the constraints placed upon the solutions, this can be rewritten as the Lagrange Primal Problem. The Primal Problem contains the parameters known as the Lagrange Multipliers. The multipliers themselves have a unique property known as the complementary slackness condition. Basically this is used as a tight condition to where only a few observations qualify, that condition basically being an exact distance to the hyperplane that separates the classes. Because this condition exist it creates what are known as support vectors for the hyperplane, which function as the margins of each class that create the boundries for the hyperplane to border. What this means is that the vector used in the equations to calculate the distance can be represented only in terms of the support vectors in the training data. This ability to represent the decision function of the model only in terms of the support vectors is why these classifiers are referred to as SVM. In much shorter terms, it allows for data to be put into a higher dimensionality so that linear separators can be applied to the classes contained within the data. Soft Margin SVM furthers this ability by allowing for error in the model and as a result is able to produce non-linear boundaries within a higher dimensional space.\newline  
+
+#### Random Forest \newline 
+Random Forest are yet another type of classification method that can be used for this type of data. As with most of the other methods discussed here and previously, Random Forest are compatible with both categorical and continuous variables. Random Forest is an extension of the decision trees method, however in random forest each decision tree is trained on a different subset of the data, similar to k folds, but expanded. The final output is determined by aggregating all of these decision trees into a majority vote for the class labels. Random Forest can be enhanced with the use of bootstrapping and bagging which allows for the use of sampling with replacement with generating each of the decision trees which leads to a reduction in the amount of variance and overfitting that can occur with the model. Ideally, because multiple decision trees are being used in the process, Random Forest will output results that are much more accurate than those achieved using decision trees on their own. \newline 
+
+
+## About the Data \newline
+  The data set being used is a data set that consist of handwritten numbers ranging from 0-9. This data set included a total of 45000x784 observations, where each of the 784 variables in the data set represent a pixel and the observations represent whether or not a certain pixel is filled based on which number is being represented. Previously the data set was reduced by using PCA to help determine the number of components to include in the data. Here however, the data will be reduced by taking a percentage cut of the overall data and then further reducing the dimensionality of the data by a percentage.  \newline
+```{r}
+#file.choose()
+```
+
+
+```{r}
+trainset <- read.csv("C:\\Users\\super\\Downloads\\digit_train.csv")
+trainset$label <- factor(trainset$label)
+```
+
+```{r}
+#Create a random sample of n% of train data set
+percent <- .15
+dimReduce <- .10
+set.seed(275)
+DigitSplit <- sample(nrow(trainset),nrow(trainset)*percent)
+
+trainset <- trainset[DigitSplit,]
+dim(trainset)
+```
+Now the data has been reduced to dimensions that are more acceptable for the training methods being used, the next step in the preprocessing can take place. \newline
+
+```{r}
+# Setting static variables used throughout the Models section
+N <- nrow(trainset)
+kfolds <- 2
+set.seed(30)
+holdout <- split(sample(1:N), 1:kfolds)
+
+# Function for model evaluation
+get_accuracy_rate <- function(results_table, total_cases) {
+    diagonal_sum <- sum(c(results_table[[1]], results_table[[12]], results_table[[23]], results_table[[34]],
+                        results_table[[45]], results_table[[56]], results_table[[67]], results_table[[78]],
+                        results_table[[89]], results_table[[100]]))
+  (diagonal_sum / total_cases)*100
+}
+```
+
+
+## Data Preprocessing \newline
+
+```{r}
+# Discretizing at 87%
+binarized_trainset <- trainset
+for (col in colnames(binarized_trainset)) {
+  if (col != "label") {
+    binarized_trainset[, c(col)] <- ifelse(binarized_trainset[, c(col)] > 131, 1, 0)
+  }
+}
+for (col in colnames(binarized_trainset)) {
+  if (col != "label") {
+    binarized_trainset[, c(col)] <- as.factor(binarized_trainset[, c(col)])
+  }
+}
+```
+
+
+
+```{r}
+digit_freq <- sqldf("SELECT label, COUNT(label) as count
+                     FROM trainset
+                     GROUP BY label")
+ggplot(digit_freq, aes(x=reorder(label, -count), y=count)) + geom_bar(stat="identity") + xlab("Written Digit") + ylab("Frequency Count") + ggtitle("Written Digit by Frequency Count")
+
+```
+After taking the data set and binarizing the data, the new distribution of the data set can be seen. The data has a somewhat uniform distribution, which is what is the desired distribution based on the testing performed previously. It was found that when the distribution was not uniform the performance of the model suffered heavily, to the point where the models generated using non-uniform distributions rendered the models output unusable.\newline 
+
+
+
+```{r}
+zero <- 0
+fifty <- 0
+one_hundred <- 0
+one_hundred_fifty <- 0
+two_hundred <- 0
+two_hundred_fifty_five <- 0
+for (col in colnames(trainset)) {
+  if (col != "label") {
+    #binarized_trainset[,c(col)] <- ifelse(binarized_trainset[,c(col)] > 131, 1, 0)
+    ifelse(trainset[,c(col)] == 0, zero <- zero + 1, ifelse(
+      trainset[,c(col)] < 51, fifty <- fifty + 1, ifelse(
+        trainset[,c(col)] < 101, one_hundred <- one_hundred + 1, ifelse(
+          trainset[,c(col)] < 151, one_hundred_fifty <- one_hundred_fifty + 1, ifelse(
+            trainset[,c(col)] < 201, two_hundred <- two_hundred + 1, two_hundred_fifty_five + 1
+          )
+        )
+      )
+    )
+  )
+  }
+}
+```
+
+
+```{r}
+color_bins <- data.frame("color_bin"=c("0", "50", "100", "150", "200", "255"),
+                         "count"=c(zero, fifty, one_hundred, one_hundred_fifty, two_hundred, two_hundred_fifty_five))
+ggplot(color_bins, aes(x=reorder(color_bin, -count), y=count)) + geom_bar(stat="identity") + xlab("Color Bin") + ylab("Frequency Count") + ggtitle("Color Bin by Frequency Count")
+```
+
+
+
+```{r}
+color_freq <- data.frame("0"=c(), "1"=c())
+for (col in colnames(binarized_trainset)) {
+  if (col != "label") {
+    zero <- c(length(which(binarized_trainset[,c(col)] == 0)))
+    one <- c(length(which(binarized_trainset[,c(col)] == 1)))
+    color_freq <- rbind(color_freq, data.frame("0"=zero, "1"=one))
+  }
+}
+colnames(color_freq) <- c("zero", "one")
+color_freq <- data.frame("number"=c("zero", "one"), "count"=c(sum(color_freq$zero), sum(color_freq$one)))
+
+ggplot(color_freq, aes(x=number, y=count)) + geom_bar(stat="identity") + xlab("Color Number") + ylab("Count") + ggtitle("Color Number by Count")
+```
+
+
+
+## Models 
+The first model used for analysis is kNN. For the initial selection of k, 7 was selected to gain a baseline for the performance of the model. \newline
+
+```{r}
+k_guess = 7# round(sqrt(nrow(trainset)))
+all_results <- data.frame(orig=c(), pred=c())
+for (k in 1:kfolds) {
+  new_test <- trainset[holdout[[k]], ]
+  new_train <- trainset[-holdout[[k]], ]
+  
+  new_test_no_label <- new_test[-c(1)]
+  new_test_just_label <- new_test[c(1)]
+  
+  pred <- knn(train=new_train, test=new_test, cl=new_train$label, k=k_guess, prob=FALSE)
+  
+  all_results <- rbind(all_results, data.frame(orig=new_test_just_label$label, pred=pred))
+}
+table(all_results$orig, all_results$pred)
+get_accuracy_rate(table(all_results$orig, all_results$pred), length(all_results$pred))
+
+```
+The initial model generated an accuracy of 91.67%. This is a substantial improvement over the previous models used, where the highest accuracy obtained was with Naive Bayes at ~85% and only after parameter tuning. Here, on the initial pass of kNN, a much higher percentage of accuracy is obtained. Even more so when compared to the previous models using decision trees that averaged ~65% accuracy. From this initial test kNN seems far superior to the previous methods used. \newline
+
+
+```{r}
+k_guess = round(sqrt(nrow(trainset)))
+all_results <- data.frame(orig=c(), pred=c())
+for (k in 1:kfolds) {
+  new_test <- trainset[holdout[[k]], ]
+  new_train <- trainset[-holdout[[k]], ]
+  
+  new_test_no_label <- new_test[-c(1)]
+  new_test_just_label <- new_test[c(1)]
+  
+  pred <- knn(train=new_train, test=new_test, cl=new_train$label, k=k_guess, prob=FALSE)
+  
+  all_results <- rbind(all_results, data.frame(orig=new_test_just_label$label, pred=pred))
+}
+table(all_results$orig, all_results$pred)
+get_accuracy_rate(table(all_results$orig, all_results$pred), length(all_results$pred))
+
+```
+Here the value for k is changed to be the square root of the number of observations in the data set. This resulted in much worse performance of the model, dropping the accuracy to 83.38%, which is worse than the best model of Naive Bayes. This shows that the value of k needs to be considered carefully or risk dropping the performance of the model. \newline
+
+
+```{r}
+k_guess = 3# round(sqrt(nrow(trainset)))
+all_results <- data.frame(orig=c(), pred=c())
+for (k in 1:kfolds) {
+  new_test <- trainset[holdout[[k]], ]
+  new_train <- trainset[-holdout[[k]], ]
+  
+  new_test_no_label <- new_test[-c(1)]
+  new_test_just_label <- new_test[c(1)]
+  
+  pred <- knn(train=new_train, test=new_test, cl=new_train$label, k=k_guess, prob=FALSE)
+  
+  all_results <- rbind(all_results, data.frame(orig=new_test_just_label$label, pred=pred))
+}
+table(all_results$orig, all_results$pred)
+get_accuracy_rate(table(all_results$orig, all_results$pred), length(all_results$pred))
+
+```
+Decreasing the value of k down to 3 results in an uptick in the performance of the model. This increase is up to 92.02%, which is a slight improvement over the first model where k=7. Additionally testing can be performed to see if more accuracy can be found with additional tuning.\newline 
+
+
+
+
+```{r}
+k_guess = 5# round(sqrt(nrow(trainset)))
+all_results <- data.frame(orig=c(), pred=c())
+for (k in 1:kfolds) {
+  new_test <- trainset[holdout[[k]], ]
+  new_train <- trainset[-holdout[[k]], ]
+  
+  new_test_no_label <- new_test[-c(1)]
+  new_test_just_label <- new_test[c(1)]
+  
+  pred <- knn(train=new_train, test=new_test, cl=new_train$label, k=k_guess, prob=FALSE)
+  
+  all_results <- rbind(all_results, data.frame(orig=new_test_just_label$label, pred=pred))
+}
+table(all_results$orig, all_results$pred)
+get_accuracy_rate(table(all_results$orig, all_results$pred), length(all_results$pred))
+
+```
+Increasing the value of k to 5 resulted in a slight decrease in the accuracy to 91.81%, which is less than with k=3, but higher than the initial selection of k=7. \newline
+
+
+```{r}
+k_guess = 8# round(sqrt(nrow(trainset)))
+all_results <- data.frame(orig=c(), pred=c())
+for (k in 1:kfolds) {
+  new_test <- trainset[holdout[[k]], ]
+  new_train <- trainset[-holdout[[k]], ]
+  
+  new_test_no_label <- new_test[-c(1)]
+  new_test_just_label <- new_test[c(1)]
+  
+  pred <- knn(train=new_train, test=new_test, cl=new_train$label, k=k_guess, prob=FALSE)
+  
+  all_results <- rbind(all_results, data.frame(orig=new_test_just_label$label, pred=pred))
+}
+table(all_results$orig, all_results$pred)
+get_accuracy_rate(table(all_results$orig, all_results$pred), length(all_results$pred))
+
+```
+Using k=8 once again results in a slight decrease over the initial selection of k=7. This shows that the optimal selection of k out of the values selected for this data is k=3.\newline  
+
+
+
+### SVM \newline
+
+Next the SVM model will be used. To gain an initial baseline for this model the non-binarized value. 
+```{r}
+cols_to_remove = c()
+for (col in colnames(trainset)) {
+  if (col != "label") {
+    if (length(unique(trainset[, c(col)])) == 1) {
+      cols_to_remove <- c(cols_to_remove, col)
+    }
+  }
+}
+
+svm_trainset <- trainset[-which(colnames(trainset) %in% cols_to_remove)]
+
+```
+
+
+
+
+```{r}
+# Baseline SVM - no changes to data
+all_results <- data.frame(orig=c(), pred=c())
+for (k in 1:kfolds) {
+  new_test <- svm_trainset[holdout[[k]], ]
+  new_train <- svm_trainset[-holdout[[k]], ]
+  
+  new_test_no_label <- new_test[-c(1)]
+  new_test_just_label <- new_test[c(1)]
+  
+  test_model <- svm(label ~ ., new_train, na.action=na.pass)
+  pred <- predict(test_model, new_test_no_label, type=c("class"))
+  
+  all_results <- rbind(all_results, data.frame(orig=new_test_just_label$label, pred=pred))
+}
+table(all_results$orig, all_results$pred)
+get_accuracy_rate(table(all_results$orig, all_results$pred), length(all_results$pred))
+
+```
+ Running the SVM on a non binarized data set resulted in very poor performance. In fact, it randomly guessed and achieved an accuracy if 12.02% as a result. This shows that in order to be able to use SVM the data, at least this data set, has to be binarized first. \newline
+
+
+```{r}
+# Binarizing preprocessed SVM trainset
+binarized_svm_trainset <- svm_trainset
+for (col in colnames(binarized_svm_trainset)) {
+  if (col != "label") {
+    binarized_svm_trainset[, c(col)] <- ifelse(binarized_svm_trainset[, c(col)] > 131, 1, 0)
+  }
+}
+for (col in colnames(binarized_svm_trainset)) {
+  if (col != "label") {
+    binarized_svm_trainset[, c(col)] <- as.factor(binarized_svm_trainset[, c(col)])
+  }
+}
+
+cols_to_remove = c()
+for (col in colnames(binarized_svm_trainset)) {
+  if (col != "label") {
+    if (length(unique(binarized_svm_trainset[, c(col)])) == 1) {
+      cols_to_remove <- c(cols_to_remove, col)
+    }
+  }
+}
+```
+
+
+```{r}
+binarized_svm_trainset <- binarized_svm_trainset[-which(colnames(binarized_svm_trainset) %in% cols_to_remove)]
+```
+
+
+```{r}
+# Testing SVM on new data
+all_results <- data.frame(orig=c(), pred=c())
+for (k in 1:kfolds) {
+  new_test <- binarized_svm_trainset[holdout[[k]], ]
+  new_train <- binarized_svm_trainset[-holdout[[k]], ]
+  
+  new_test_no_label <- new_test[-c(1)]
+  new_test_just_label <- new_test[c(1)]
+  
+  test_model <- svm(label ~ ., new_train, na.action=na.pass)
+  pred <- predict(test_model, new_test_no_label, type=c("class"))
+  
+  all_results <- rbind(all_results, data.frame(orig=new_test_just_label$label, pred=pred))
+}
+table(all_results$orig, all_results$pred)
+get_accuracy_rate(table(all_results$orig, all_results$pred), length(all_results$pred))
+```
+After Binarizing the data an accuracy of 89.51% was achieved. This is better than the best Naive Bayes model used previously. However, this falls short of the best performance of the kNN model, and even more so, the default kNN model. There are other kernels that can be used with SVM that may result in a higher accuracy. The next model will utlize the polynomial kernel. \newline
+
+```{r}
+#Polynomial Kernel
+all_results <- data.frame(orig=c(), pred=c())
+for (k in 1:kfolds) {
+  new_test <- binarized_svm_trainset[holdout[[k]], ]
+  new_train <- binarized_svm_trainset[-holdout[[k]], ]
+  
+  new_test_no_label <- new_test[-c(1)]
+  new_test_just_label <- new_test[c(1)]
+  
+  test_model <- svm(label ~ ., new_train, kernel="polynomial", na.action=na.pass)
+  pred <- predict(test_model, new_test_no_label, type=c("class"))
+  
+  all_results <- rbind(all_results, data.frame(orig=new_test_just_label$label, pred=pred))
+}
+table(all_results$orig, all_results$pred)
+get_accuracy_rate(table(all_results$orig, all_results$pred), length(all_results$pred))
+```
+Utilizing the polynomial kernel resulted in abysmal performance for the model, returning an accuracy of 13.27%. This is as bad as the performance when using the non binarized data. This suggest a mismatch with data type, either that the polynomial kernel is not for uniform distributions, that it cannot be used with binarized data, or both. As such, the next kernel that will be used is the radial kernel. \newline
+
+
+```{r}
+# Radial Kernel
+all_results <- data.frame(orig=c(), pred=c())
+for (k in 1:kfolds) {
+  new_test <- binarized_svm_trainset[holdout[[k]], ]
+  new_train <- binarized_svm_trainset[-holdout[[k]], ]
+  
+  new_test_no_label <- new_test[-c(1)]
+  new_test_just_label <- new_test[c(1)]
+  
+  test_model <- svm(label ~ ., new_train, kernel="radial", na.action=na.pass)
+  pred <- predict(test_model, new_test_no_label, type=c("class"))
+  
+  all_results <- rbind(all_results, data.frame(orig=new_test_just_label$label, pred=pred))
+}
+table(all_results$orig, all_results$pred)
+get_accuracy_rate(table(all_results$orig, all_results$pred), length(all_results$pred))
+```
+Using the radial kernel an accuracy of 89.51% which is same as the default method, so not worse than the baseline but no improvement. For the last attempt the sigmoid kernel will be used.\newline 
+
+
+
+```{r}
+all_results <- data.frame(orig=c(), pred=c())
+for (k in 1:kfolds) {
+  new_test <- binarized_svm_trainset[holdout[[k]], ]
+  new_train <- binarized_svm_trainset[-holdout[[k]], ]
+  
+  new_test_no_label <- new_test[-c(1)]
+  new_test_just_label <- new_test[c(1)]
+  
+  test_model <- svm(label ~ ., new_train, kernel="sigmoid", na.action=na.pass)
+  pred <- predict(test_model, new_test_no_label, type=c("class"))
+  
+  all_results <- rbind(all_results, data.frame(orig=new_test_just_label$label, pred=pred))
+}
+table(all_results$orig, all_results$pred)
+get_accuracy_rate(table(all_results$orig, all_results$pred), length(all_results$pred))
+```
+Using the sigmoid kernel an accuracy of 87.76%, a decrease over the radial and default kernels. This suggest that best kernels to use for this type of data in a binarized form is the default or the radial kernels. However, none of the kernel methods used with SVM performed better than kNN in prediction with this data. \newline
+
+
+
+##Random Forest
+
+```{r}
+library(randomForest)
+all_results <- data.frame(orig=c(), pred=c())
+for (k in 1:kfolds) {
+  new_test <- trainset[holdout[[k]], ]
+  new_train <- trainset[-holdout[[k]], ]
+  
+  new_test_no_label <- new_test[-c(1)]
+  new_test_just_label <- new_test[c(1)]
+  
+  test_model <- randomForest(label ~ ., new_train, na.action=na.pass)
+  pred <- predict(test_model, new_test_no_label, type=c("class"))
+  
+  all_results <- rbind(all_results, data.frame(orig=new_test_just_label$label, pred=pred))
+}
+table(all_results$orig, all_results$pred)
+get_accuracy_rate(table(all_results$orig, all_results$pred), length(all_results$pred))
+```
+Using random forest produces the highest accuracy of all models so far, beating out kNN marginally. This is also a much higher performance than either of the models, decision trees or naive bayes, uesd previously. But can any improvement be found by binarizing the training data?\newline
+
+
+
+```{r}
+rf_trainset <- trainset[-which(colnames(trainset) %in% cols_to_remove)]
+# Binarizing preprocessed Random Forest trainset
+binarized_rf_trainset <- rf_trainset
+for (col in colnames(binarized_rf_trainset)) {
+  if (col != "label") {
+    binarized_rf_trainset[, c(col)] <- ifelse(binarized_rf_trainset[, c(col)] > 131, 1, 0)
+  }
+}
+for (col in colnames(binarized_rf_trainset)) {
+  if (col != "label") {
+    binarized_rf_trainset[, c(col)] <- as.factor(binarized_rf_trainset[, c(col)])
+  }
+}
+
+cols_to_remove = c()
+for (col in colnames(binarized_rf_trainset)) {
+  if (col != "label") {
+    if (length(unique(binarized_rf_trainset[, c(col)])) == 1) {
+      cols_to_remove <- c(cols_to_remove, col)
+    }
+  }
+}
+```
+
+
+
+```{r}
+binarized_rf_trainset <- binarized_rf_trainset[-which(colnames(binarized_rf_trainset) %in% cols_to_remove)]
+```
+
+
+
+
+```{r}
+all_results <- data.frame(orig=c(), pred=c())
+for (k in 1:kfolds) {
+  new_test <- binarized_rf_trainset[holdout[[k]], ]
+  new_train <- binarized_rf_trainset[-holdout[[k]], ]
+  
+  new_test_no_label <- new_test[-c(1)]
+  new_test_just_label <- new_test[c(1)]
+  
+  test_model <- randomForest(label ~ ., new_train, na.action=na.pass)
+  pred <- predict(test_model, new_test_no_label, type=c("class"))
+  
+  all_results <- rbind(all_results, data.frame(orig=new_test_just_label$label, pred=pred))
+}
+table(all_results$orig, all_results$pred)
+get_accuracy_rate(table(all_results$orig, all_results$pred), length(all_results$pred))
+```
+Running Random Forest with after binarizing the data results in a very slight decrease in the accuracy of the model, however this decrease in performance is very minimal and is an indicator that Random Forest may be the best model to handle either binarized or non binarized data when compared to kNN and SVM. \newline
+
+
+```{r}
+prev_result <- 0
+best_result <- 0
+best_number_trees <-0
+for (trees in 5:15) {
+  if (trees %% 5 == 0) {
+    all_results <- data.frame(orig=c(), pred=c())
+    for (k in 1:kfolds) {
+      new_test <- trainset[holdout[[k]], ]
+      new_train <- trainset[-holdout[[k]], ]
+      
+      new_test_no_label <- new_test[-c(1)]
+      new_test_just_label <- new_test[c(1)]
+      
+      test_model <- randomForest(label ~ ., new_train, replace=TRUE, na.action=na.pass)
+      pred <- predict(test_model, new_test_no_label, type=c("class"))
+      
+      all_results <- rbind(all_results, data.frame(orig=new_test_just_label$label, pred=pred))
+    }
+    #table(all_results$orig, all_results$pred)
+    new_result <- get_accuracy_rate(table(all_results$orig, all_results$pred), length(all_results$pred))
+    
+    if (new_result > prev_result) {
+      prev_result <- new_result
+    } else {
+      best_number_trees <- trees
+      best_result <- new_result
+      break
+    }
+  }
+}  
+paste("Best Number of Trees:", best_number_trees, "- Best Result:", best_result, sep=" ")
+table(all_results$orig, all_results$pred)
+```
+
+The last iteration of the Random Forest runs through multiple trees to find the best set of random forest. The accuracy of the model using this method comes out as 93.41%. This is ever so slightly lower than the original random forest model. However this difference is negligible.\newline
+
+
+## Conclusions \newline
+Comparing the performance of the models used here to the previous models shows a stark difference in the performance of these types of models. Previously, decision trees and naive bayes were used with the data, where decision trees performed poorly with its best performance ~65%. Naive Bayes with some modification was able to perform much better achieving an accuracy of 85%. However, neither of these methods are able to achieve, out of the box, the same accuracy that kNN, SVM, and Random Forest were able to achieve. Out of the three models the best performing model in terms of accuracy was Random Forest, which showed an ability to work with both binarized and non binarized data. KNN was closely behind random forest with a high accuracy rate that showed significant improvement over naive bayes. SVM performed better than naive bayes, but showed the least improvement over naive bayes. As such, when using this type of data, random forest would be the ideal method out of the box when making a comparison between the five models examined.  
+
+
+
+
+
+
+
+
+
+
+
+
+
