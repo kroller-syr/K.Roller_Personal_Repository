@@ -1,0 +1,98 @@
+---
+title: "Homework 8"
+author: "Kent Roller"
+date: "2024-05-26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1. The data sets package in R contains a small data set called mtcars that contains n = 32  observations of the characteristics of different automobiles. Create a new data frame  from part of this data set using this command: myCars <- data.frame(mtcars[,1:6]). 
+
+```{r}
+myCars<-data.frame(mtcars[,1:6])
+```
+\newpage
+
+2. Create and interpret a bivariate correlation matrix using cor(myCars) keeping in mind  the idea that you will be trying to predict the mpg variable. Which other variable might  be the single best predictor of mpg? 
+
+```{r}
+cor(myCars)
+
+```
+
+Looking at the output from the correlation matrix we can see that several variables are strongly negatively correlated with the mpg variable. Cylinder count, engine displacement, and weight appear to be the strongest correlations with mpg, with horsepower right behind. As such we might try an initial model of mpg~cyl+disp+hp+weight and investigate the significance of the coefficients in the linear model. \newpage
+
+3. Run a multiple regression analysis on the myCars data with lm(), using mpg as the  dependent variable and wt (weight) and hp (horsepower) as the predictors. Make  sure to say whether or not the overall R-squared was significant. If it was significant,  report the value and say in your own words whether it seems like a strong result or  not. Review the significance tests on the coefficients (B-weights). For each one that  was significant, report its value and say in your own words whether it seems like a  strong result or not.  
+
+```{r}
+lin.mod<-lm(mpg~wt+hp, data=myCars)
+summary(lin.mod)
+```
+
+Looking at the summary of the output, we can begin with examining the p-value for the F statistic to make sure that our R-squared value is valid. Looking at the p-value, we can see that it is very close to 0, and much much smaller than our alpha value of 0.05. We can then look at the residuals to make sure that they form a somewhat normal distribution. We have a median close to zero with fairly symmetric tails on either side. Now, we examine the coefficients and see if they are significant. Looking at the p-values for the coefficients we can see that all of the coefficients are significant, with the coefficients exhibiting the negative effect we noticed in the correlation matrix. We can also see that hp is slightly less significant than weight and has a slightly smaller effect than wt on mpg. Lastly we can look at the adjusted R-squared which has a value of 0.8148, meaning we that we can explain 81.48% of the change in the depedent variable with the selected independent variables (predictors). This is a good R-squared, and all things taken into consideration we can consider this a valid model, but need to check for multicollinearity among predictor variables. \newpage 
+
+
+4. Using the results of the analysis from Exercise 2, construct a prediction equation for  mpg using all three of the coefficients from the analysis (the intercept along with the  two B-weights). Pretend that an automobile designer has asked you to predict the  mpg for a car with 110 horsepower and a weight of 3 tons. Show your calculation and  the resulting value of mpg.  \newline 
+
+So....instead of using the correlation matrix to calculate this can we not also just use the coefficients to solve the problem? Iirc...\newline 
+
+y-hat=beta0+beta_hat(1)(x1)+beta_hat(2)(x2) \newline 
+
+y-hat=beta0+(-3.87782)(3)+(-0.03177)(110) \newline
+
+y-hat=beta0+(-11.63346)+(-3.4947) \newline 
+
+y-hat=beta0-15.12816 \newline 
+
+y-hat=37.22727-15.12816 \newline 
+
+y-hat=22.1 \newline 
+
+So the predicted mpg for a vehicle that weighed 3 tons equipped with an engine that made 110 horsepower would be 22.1 mpg. This is of course found using the intercept and the coefficient values in the linear regression. \newpage 
+
+5. Run a multiple regression analysis on the myCars data with lmBF(), using mpg as the  dependent variable and wt (weight) and hp (horsepower) as the predictors. Interpret  the resulting Bayes factor in terms of the odds in favor of the alternative hypothesis. If  you did Exercise 2, do these results strengthen or weaken your conclusions? \newline 
+
+```{r}
+library(BayesFactor)
+lin.mod.bf<-lmBF(mpg~wt+hp, data=myCars)
+lin.mod.bf
+```
+Based off of the output of the bayesian analysis we can conclude the following, there is very very strong evidence in favor of the alternative hypothesis over the null that wt and hp have a significant effect on the depedent variable mpg. 
+
+\newpage 
+6. Run lmBF() with the same model as for Exercise 4, but with the options posterior=TRUE  and iterations=10000. Interpret the resulting information about the coefficients. 
+
+```{r}
+lin.mod.bf2<-lmBF(mpg~wt+hp, data=myCars, posterior = TRUE, iterations =10000)
+summary(lin.mod.bf2)
+#mean(rsqList)
+```
+Based on this output we can make the following conclusions. We can see that the means for the coefficients (hp and wt) are very close to the coefficient value we found in the non-bayesian linear model. This difference can be attributed to the way that the values are calculated and the assumptions made in the linear model versus the bayesian analysis which accounts for such factors as skew in the data. Further, we can examine the quartiles for each variable and we can observe that the intervals for both hp and wt do not contain zero. This reinforces our findings from earlier that both of these independent variables are significant. The R-squared found via this method is much smaller at 34.1% of the change in the depedent variable can be explained by the change in the independent variables wt and hp.  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,102 @@
+---
+title: "Homework 10"
+author: "Kent Roller"
+date: "2024-06-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+2. Download and library the nlme package and use data (“Blackmore”) to activate the  Blackmore data set. Inspect the data and create a box plot showing the exercise level at  different ages. Run a repeated measures ANOVA to compare exercise levels at ages 8, 10,  and 12 using aov(). You can use a command like, myData <-Blackmore[Blackmoreage  <=12,], to subset the data. Keeping in mind that the data will need to be balanced before you can conduct this analysis, try running a command like this,  table(myDatasubject,myData$age)), as the starting point for cleaning up the data set. 
+
+```{r}
+library(nlme)
+library(car)
+# Blackmore is a dataset in the car library. 
+# https://www.rdocumentation.org/packages/car/versions/2.1-6/topics/Blackmore
+
+```
+
+```{r}
+data("Blackmore", package="car")
+bmore<-Blackmore
+library(tidyverse)
+```
+```{r}
+library(dplyr)
+library(ez)
+bmore2<-bmore
+bmore2$age<-as.factor(bmore2$age)
+bmore_filtered<-bmore2 %>% filter(age %in% c(8,10,12))
+bmore_balanced<-bmore_filtered %>% 
+  group_by(subject) %>% 
+  filter(n() == 3) %>% 
+  ungroup()
+ezANOVA(data=bmore_balanced, dv.(exercise), within=.(age), wid=.(subject), detailed=TRUE)
+
+```
+
+```{r}
+library(tidyverse)
+library(car)
+
+data("Blackmore", package = "car")
+bmore <- Blackmore
+bmore_filtered <- bmore %>% filter(age %in% c(8, 10, 12))
+
+ggplot(bmore_filtered, aes(x = factor(age), y = exercise)) +
+  geom_boxplot() +
+  labs(title = "Boxplots of Exercise by Age Group", x = "Age Group", y = "Exercise") +
+  theme_minimal()
+
+#This is poor coding practice I know and is garbage to rewrite a variable in the middle of the code but. 
+```
+Observing the output of the boxplots we can see that there is a large amount of overlap in the observations between age groups. However despite this overlap it is still possible to see the slightest of upward trends moving from left to right. Looking at the output of the ezANOVA we can see that the difference in means between age groups is in fact statistically significant (large F statistic and small p-value for the age factor). This suggest that there is indeed a significant difference between the age groups meaning we can reject the null hypothesis in favor of the alternative, that the mean difference between groups is not 0. 
+
+
+\newpage 
+
+5. Given that the AirPassengers data set has a substantial growth trend, use diff() to create a differenced data set. Use plot() to examine and interpret the results of differencing. Use cpt.var() to find the change point in the variability of the differenced time series.  Plot the result and describe in your own words what the change point signifies.  
+
+```{r}
+library(changepoint)
+```
+
+```{r}
+data("AirPassengers")
+airp<-AirPassengers
+```
+
+```{r}
+airp.diff<-diff(airp)
+plot(airp.diff, main="Differenced Air Passeneger Data")
+```
+
+```{r}
+change.point<-cpt.var(airp.diff, method= "PELT")
+plot(change.point, main="Change Point in Variance")
+```
+
+From ~1950 to 1954 airtravel seems to have some variance that can be attributed to seasonality. While the peaks do seem to be slightly higher year over year in this period, its not until 1955 that this growth becomes significantly different from the year before, which means that this growth is most likely due to factors outside of time or seasonality. 
+
+\newpage 
+
+6. Use cpt.mean() on the AirPassengers time series. Plot and interpret the results. Compare the change point of the mean that you uncovered in this case to the change point  in the variance that you uncovered in Exercise 5. What do these change points suggest  about the history of air travel? 
+```{r}
+change.mean<-cpt.mean(airp, method="PELT")
+plot(change.mean, main= "Change Points in Mean Passenger Data")
+```
+
+Observing the plot we can see multiple points are marked for change points, most of them occuring between 1950 and 1956, indicating that there was some event that occured during this time that caused a continual upward shift in the number of people using airtravel at this time. 
+
+\newpage 
+
+7. Find historical information about air travel on the Internet and/or in reference materials  that sheds light on the results from Exercises 5 and 6. Write a mini-article (less than 250  words) that interprets your statistical findings from Exercises 5 and 6 in the context of  the historical information you found.  
+\newline 
+
+Hey!! I think I know the answer to this, so I am going to take a crack at this. Jet propulsion technology was still in its infancy in at the conclusion of WWII, just a few short years before the data on this chart begins. Air travel in the late 40s and early 50s was how we say....sketchy at best. Not that the planes of the era were not capable in their own right, but a far cry from what we think of when getting on a plane today. The cabins of planes such as the Lockheed Model 14 Super Electra and Douglas DC-3 flown in the late 30s and early 40s were not pressurized, which means the planes flew low, flew slow, it was cold, and a generally crappy experience. As such, at the time alternatives were still preferred. However, starting in the 50s several things happened, planes grew larger, we got better at making them, jet technology improved, and by the mid to late 50s air travel was much closer to resembling what it is today. Jets were able to fly faster, higher, had pressurized cabins, and were generally a better experience than the planes that had come before it. And since all of these are true, people became more willing to engage in this form of travel, and as speed and convience of air travel continued to improve, cost came down and demand skyrocketed. All that being said, I would still hop on a C-130 and go anywhere in the world, versus if it was, oh, I dunno, something like a 737 Max I wouldnt want to ride a 20 minute connecting flight in that. 
+
+

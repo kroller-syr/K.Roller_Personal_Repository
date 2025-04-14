@@ -1,0 +1,93 @@
+---
+title: "Homework 5"
+author: "Kent Roller"
+date: "2024-04-28"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+6. The PlantGrowth data set contains three different groups, with each representing  various plant food diets (you may need to type data(PlantGrowth) to activate it). The  group labeled “ctrl” is the control group, while “trt1” and “trt2” are different types of  experimental treatment. As a reminder, this subsetting statement accesses the weight  data for the control group:  PlantGrowth$weight[PlantGrowth$group==”ctrl”]  and this subsetting statement accesses the weight data for treatment group 1:  PlantGrowth$weight[PlantGrowth$group==”trt1”]  Run a t-test to compare the means of the control group (“ctrl”) and treatment group  1 (“trt1”) in the PlantGrowth data. Report the observed value of t, the degrees of  freedom, and the p-value associated with the observed value. Assuming an alpha  threshold of .05, decide whether you should reject the null hypothesis or fail to reject  the null hypothesis. In addition, report the upper and lower bound of the confidence  interval. 
+
+```{r}
+plant.growth<-PlantGrowth
+ctrl.v.trt1<-t.test(plant.growth$weight[plant.growth$group=="ctrl"], plant.growth$weight[plant.growth$group=='trt1'])
+ctrl.v.trt1
+
+```
+
+The means as reported are 5.032 for the control group and 4.661 
+for the trt1 group. The reported t-value is 1.1913, with a df value of 16.524 and a p-value of 0.2504. Assuming an alpha level of 0.05 we would fail to reject the null hypothesis, in other words, the difference in means between the two groups is not statistically different than zero. Or, the difference between means is essentially zero, there is no difference between the groups. 
+The 95% CI as reported is [-0.2875162,1.0295162] for the difference in means. Since this confidence interval contains 0 then there is a probablity that 0 is the true difference in means, reinforcing what we concluded from the p-value assesement.
+\newpage 
+
+
+7. Install and library() the BEST package. Note that you may need to install a program  called JAGS onto your computer before you try to install the BEST package inside of  R. Use BESTmcmc() to compare the PlantGrowth control group (“ctrl”) to treatment  group 1 (“trt1”). Plot the result and document the boundary values that BESTmcmc()  calculated for the HDI. Write a brief definition of the meaning of the HDI and interpret  the results from this comparison.  
+
+```{r}
+library(rjags)
+library(HDInterval)
+library(BEST)
+
+plant.best<-BESTmcmc(plant.growth$weight[plant.growth$group=='ctrl'],
+                     plant.growth$weight[plant.growth$group=='trt1'])
+plot(plant.best)
+```
+
+
+The boundaries calculated for the 95% HDI is [-0.36,1.15], with and additional output of 14.8% < 0 < 85.2% in relation to the mcmc calculation of the mean. The highest density interval can be interperted as follows: There is a 95% probablity that the population mean difference between the two groups (ctrl and trt1) falls within the given range. We can additionally say that 14.8% of the mcmc calculated means were less than 0 and 85.2% of the means calculated were above 0. Lastly we can say that the mean of means calculated is 0.383. Since this interval does contain zero then we should note there exists a probablity that the true mean difference between groups is zero, as suggested with the previous t.test and 95% CI generation. 
+
+\newpage
+
+8. Compare and contrast the results of Exercise 6 and Exercise 7. You have three types  of evidence: the results of the null hypothesis test, the confidence interval, and the  HDI from the BESTmcmc() procedure. Each one adds something, in turn, to the  understanding of the difference between groups. Explain what information each test  provides about the comparison of the control group (“ctrl”) and the treatment group 1  (“trt1”). \newline 
+
+From the output of the hypothesis test we were able to see that we would fail to reject the null hypothesis, which means that from the hypothesis test we could conclude that the difference in means between groups is zero, in other words the means are identical and there is no difference in the two groups. 
+Looking at the CI we can see that we have an interval of [-0.2875162,1.0295162], where the interval includes zero which suggest there is a probability that the true sample mean difference is 0 and there is no difference in the groups. 
+Lastly, looking at the highest density interval generated we can see that we had an interval of [-0.36,1.15], which is not extremely dissimilar from what we generated for the 95% CI. And like the 95% CI we can see that the interval generated contains 0, which means that there is a probability that the true mean difference is zero and there is no difference between the two groups. 
+For each of the mean difference intervals generated they contained zero, so they support the conclusions drawn by the other, as well as the conclusion drawn by the hypothesis testing. 
+\newpage 
+
+9. Using the same PlantGrowth data set, compare the “ctrl” group to the “trt2” group.  Use all of the methods described earlier (t-test, confidence interval, and Bayesian  method) and explain all of the results.  
+
+```{r}
+ctrl.v.trt2<-t.test(plant.growth$weight[plant.growth$group=="ctrl"], plant.growth$weight[plant.growth$group=='trt2'])
+ctrl.v.trt2
+plant.best2<-BESTmcmc(plant.growth$weight[plant.growth$group=='ctrl'],
+                     plant.growth$weight[plant.growth$group=='trt2'])
+plot(plant.best2)
+```
+
+
+For the results of the test we obtained the following results: 
+We had a t-value of -2.134 with a df=16.786 and a p-value of 0.0479. Here we can see that we have a p-value<alpha-value where 0.0479<0.05 which means that technically this is statistically significant but it is close to the threshold. With this p-value in relation to the hypothesis test we can state that we reject the null hypothesis in favor of the alternative, that is, there does exist a difference in the means between groups. 
+Lastly we have a 95% CI generated of [-0.98287213,-0.00512787], which does not contain 0, reinforcing what we learned from the evaluation of the p-value. That is, the 95% CI generated suggests that there exists a difference between the two means. 
+For the generated HDI we observe a 95% range of [-1.05,0.0623]. This indicates that the true mean of the population has a 95% chance of being between the generated interval. This interval in contrast with the CI generated does contain zero. However, we can also see from the output that 95.9% of the mcmc means calculated were less than 0, where as only 4.1% of the mcmc means calculated were greater than zero. Additionally we can see that the mean of means is -0.487. This is a greater proportion of means generated in one direction versus the previous test of ctrl vs trt1. However since the interval still contains zero would suggest further testing before making claims about the difference in means between ctrl and trt1. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

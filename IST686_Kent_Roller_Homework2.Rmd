@@ -1,0 +1,109 @@
+---
+title: "IST 686 Homework 2"
+author: "Kent Roller"
+date: "2024-04-13"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1. Flip a fair coin nine times and write down the number of heads obtained. Now repeat  this process 100,000 times. Obviously you don’t want to have to do that by hand, so create the necessary lines of R code to do it for you. Hint: You will need both the rbinom()  function and the table() function. Write down the results and explain in your own words  what they mean. 
+
+```{r}
+table(rbinom(n=100000, size=1, prob=0.5))
+```
+
+Since this is bernoulli trial with either success or fail we can consider the 0 to be tails or fail and 1 to be heads or success, in which case we would say that out of 100,000 coin tosses we would have 49,872 heads. \newpage
+
+
+
+2. Using the output from Exercise 1, summarize the results of your 100,000 trials of nine  flips each in a bar plot using the appropriate commands in R. Convert the results to  probabilities and represent that in a bar plot as well. Write a brief interpretive analysis  that describes what each of these bar plots signifies and how the two bar plots are  related. Make sure to comment on the shape of each bar plot and why you believe that  the bar plot has taken that shape. Also make sure to say something about the center of  the bar plot and why it is where it is.  
+
+
+```{r}
+barplot(table(rbinom(n=100000, size=1, prob=0.5)), main="Raw Coin Toss Counts")
+```
+
+
+```{r}
+prob.table<-table(rbinom(n=100000, size=1, prob=0.5))/100000
+prob.table
+barplot(prob.table, main="Barplot of Coin Toss Probabilities")
+```
+
+
+
+
+The barplot of the raw coin toss counts displays the number of heads and the number of tails that occured during the 100,000 tosses of the coin. Since the count is fairly close the barplot does not show us much of a difference between the two counts. Likewise, the barplot of the probabilites shows us what the probability of getting heads or tails will be if we toss a coin 100,000 times, which as shown in the output of the probability table and the barplot is 50.06% tails and 49.94% for heads. The information we can gain from looking at the shape of the barplot is that the probabalities are almost perfectly evenly distributed 50/50. If I recall correctly this has to do with the law of large numbers and CLT, as if we only flipped the coin 9 times we would end up with a variety of measurements, sometimes 30/70, 60/40, 40/60, so on and so forth. But as we increase the number of flips we get closer to the true distribution which would be a 50/50 split on a perfectly balanced coin. This barplot compared to a variety of 9 flip barplots would show this visually. 
+
+*I want to point out that I am aware that I only have two bars on my barplot and this is due to the size=1 within the rbinom() command. I felt that this was most appropriate given the circumstance but if it was supposed to have multuple bins and show the convergence to normal then I apologize in advance. Well, this is the end of the answer so I guess its not really in advance...
+\newpage
+
+
+
+6. One hundred students took a statistics test. Fifty of them are high school students and  50 are college students. Eighty students passed and 20 students failed. You now have  enough information to create a two-by-two contingency table with all of the marginal  totals specified (although the four main cells of the table are still blank). Draw that  table and write in the marginal totals. I’m now going to give you one additional piece of  information that will fill in one of the four blank cells: only three college students failed  the test. With that additional information in place, you should now be able to fill in the  remaining cells of the two-by-two table. Comment on why that one additional piece of  information was all you needed in order to figure out all four of the table’s main cells.  Finally, create a second copy of the complete table, replacing the counts of students  with probabilities. What is the pass rate for high school students? In other words, if one  focuses only on high school students, what is the probability that a student will pass the  test?  
+
+```{r}
+stu.test<-matrix(c(17,33,3,47), ncol=2, byrow=TRUE)
+colnames(stu.test)<-c("Fail", "Pass")
+rownames(stu.test)<-c("High School", "College")
+stu.test<-as.table(stu.test)
+stu.test
+# I split the code here instead of running it altogether as displayed in the book just beacuse I felt it made the output easier to read. 
+```
+
+
+
+```{r}
+margin.table(stu.test)
+margin.table(stu.test,1)
+margin.table(stu.test,2)
+stu.test.probs<-stu.test/margin.table(stu.test)
+stu.test.probs
+```
+
+The reason that one piece of information that was given was all that was needed to finish the contigency table was due to the fact that we already knew that the split was 50/50 between college students and high school students. We also knew that there were a total of 80 passes and 20 fails. This means that if we only had 3 college students fail then the other 17 would have to be high school students. From there we can fill out the table the rest of the way with relative ease. 
+
+If we wanted to focus only on the values for high school students we could normalize the probablities in the contigency table: 
+```{r}
+17/50
+33/50
+```
+
+So if we focus only on High School students the probablity that a student taking the test will pass is 66%. \newpage 
+
+
+7. In a typical year, 71 out of 100,000 homes in the United Kingdom is repossessed by  the bank because of mortgage default (the owners did not pay their mortgage for many  months). Barclays Bank has developed a screening test that they want to use to predict  whether a mortgagee will default. The bank spends a year collecting test data: 93,935  households pass the test and 6,065 households fail the test. Interestingly, 5,996 of  those who failed the test were actually households that were doing fine on their mortgage (i.e., they were not defaulting and did not get repossessed). Construct a complete  contingency table from this information. Hint: The 5,996 is the only number that goes in  a cell; the other numbers are marginal totals. What percentage of customers both pass  the test and do not have their homes repossessed?  
+
+
+```{r}
+bank.test<-matrix(c(5996,93933,71,0), ncol=2, byrow=TRUE)
+colnames(bank.test)<-c("Fail", "Pass")
+rownames(bank.test)<-c("Not Default Risk", "Default Risk")
+bank.test<-as.table(bank.test)
+bank.test
+```
+
+```{r}
+margin.table(bank.test)
+margin.table(bank.test,1)
+margin.table(bank.test,2)
+bank.test.probs<-bank.test/margin.table(bank.test)
+bank.test.probs
+```
+
+```{r}
+93933/99929
+```
+When looking at the number of homeowners who made their payments and were not a default risk AND passed the test we can see that there was a 94% pass rate. (93.99974)
+
+
+
+
+
+
+
+
+

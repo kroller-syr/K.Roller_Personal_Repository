@@ -1,0 +1,82 @@
+---
+title: "Homework 9"
+author: "Kent Roller"
+date: "2024-05-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+6. Continue the analysis of the Chile data set described in this chapter. The data set is  in the “car” package, so you will have to install.packages() and library() that package  first, and then use the data(Chile) command to get access to the data set. Pay close  attention to the transformations needed to isolate cases with the Yes and No votes as  shown in this chapter. Add a new predictor, statusquo, into the model and remove the  income variable. Your new model specification should be vote ~ age + statusquo.  The statusquo variable is a rating that each respondent gave indicating whether they  preferred change or maintaining the status quo. Conduct general linear model and  Bayesian analysis on this model and report and interpret all relevant results. Compare  the AIC from this model to the AIC from the model that was developed in the chapter  (using income and age as predictors). 
+
+
+```{r}
+#Generalized Model (Logistic Regression)
+library(car)
+Chile <- Chile
+ChileY <- Chile[Chile$vote == 'Y', ] # Grab the Yes votes  
+ChileN <- Chile[Chile$vote == 'N', ] # Grab the No votes  
+ChileYN <- rbind(ChileY, ChileN) # Make a new dataset with those  
+ChileYN <- ChileYN[complete.cases(ChileYN), ]   
+ChileYN$vote <- factor(ChileYN$vote, levels = c("N", "Y"))
+ch.log.mod<-glm(formula=vote~age + statusquo, family= binomial(), data= ChileYN)
+summary(ch.log.mod)
+exp(coef(ch.log.mod))
+table(round(predict(ch.log.mod, type='response')), ChileYN$vote)
+
+```
+
+Interpretation of GLM: \newline 
+
+We can examine the output above to compare this new model with the model we created in this chapter. As requested we have removed the income variable from the regression and have replaced it with the statusquo variable instead. The results show this to be a mixed bag of results but overall positive outcome. Using this method we see the variable age lose its significance in the regression versus the model age + income. However, statusquo is significant with a value close to zero, more than enough to satisfy a threshold of 0.05. We can also see that while NULL deviance remains roughly the same we see a large reduction in residual deviance, from 2326 down to 734.52. This is backed up by the fact that our AIC has also been drastically reduced from 2332 down to 740.52 making this a much better model, and indicating that statusquo is a much more reliable predictor of wether a person will vote Y/N than age or income. Lastly, looking at a confusion matrix output, we can again see a great reduction in the amount of both false positives and false negatives, giving us an accuracy of 92.3% compared to the previous models confusion matrix which resulted in an accuracy of ~56%. Again, all results indicate this a much better set of predictors. \newline 
+
+
+
+
+```{r}
+#Bayesian Analysis 
+library(MCMCpack)
+ChileYN$vote<-as.numeric(ChileYN$vote)-1
+bayes.log.mod<-MCMClogit(formula = vote ~ age + statusquo, data=ChileYN)
+summary(bayes.log.mod)
+plot(bayes.log.mod)
+```
+Interpretation of Bayesian analysis: \newline 
+
+Looking at the output from the bayesian analysis we can see a similar pattern emerge in what we found with the GLM. That is, looking at the quantiles for each variable, we can see that age has an interval which contains zero. This supports what we found in the GLM, that age is not a significant predictor in how someone will choose to vote. We can also see that statusquo and the intercept do not contain zero in their intervals suggesting they are in fact significant. If we look at the plot we can see a visual representation of these intervals and confirm that age does indeed contain zero. 
+
+\newpage 
+
+
+7. Bonus R code question: Develop your own custom function that will take the posterior  distribution of a coefficient from the output object from an MCMClogit() analysis and  automatically create a histogram of the posterior distributions of the coefficient in terms  of regular odds (instead of log-odds). Make sure to mark vertical lines on the histogram  indicating the boundaries of the 95% HDI. 
+
+```{r}
+plot_posterior_odds <- function(mcmc_output, coefficient) {
+  # Extract the posterior distribution for the specified coefficient
+  log_odds <- as.matrix(mcmc_output[, coefficient])
+  
+  # Convert log-odds to regular odds
+  odds <- apply(log_odds, 1, exp)
+  
+  # Create the histogram of the regular odds
+  hist(odds, main = paste("Posterior Distribution of", coefficient, "in Regular Odds"), 
+       xlab = "Odds", ylab = "Frequency", col = "lightblue", border = "black")
+  
+  # Calculate the 95% HDI
+  hdi_bounds <- quantile(odds, c(0.025, 0.975))
+  
+  # Add vertical lines for the 95% HDI
+  abline(v = hdi_bounds[1], col = "black", lwd = 2, lty = 2) # Left edge of 95% HDI
+  abline(v = hdi_bounds[2], col = "black", lwd = 2, lty = 2) # Right edge of 95% HDI
+}
+
+```
+
+```{r}
+plot_posterior_odds(bayes.log.mod, 'age')
+plot_posterior_odds(bayes.log.mod, 'statusquo')
+```
+

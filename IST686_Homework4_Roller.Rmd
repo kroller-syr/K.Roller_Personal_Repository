@@ -1,0 +1,99 @@
+---
+title: "Homework 4"
+author: "Kent Roller"
+date: "2024-04-27"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+7. The built-in PlantGrowth data set contains three different groups, each representing  a different plant food diet (you may need to type data(PlantGrowth) to activate it). The  group labeled “ctrl” is the control group, while the other two groups are each a different type of experimental treatment. Run the summary() command on PlantGrowth  and explain the output. Create a histogram of the ctrl group. As a hint about R syntax,  here is one way that you can access the ctrl group data:  PlantGrowthweight[PlantGrowth$group==”ctrl”]  Also create histograms of the trt1 and trt2 groups. What can you say about the differences in the groups by looking at the histograms? 
+
+```{r}
+plant.growth<-PlantGrowth
+summary(plant.growth)
+```
+
+The output from the summary command shows the fivenumsum for the weight and shows the means for each one of the groups. The five number summary shown here is the same that can be displayed using the fivenumsum(plant.growth) command. This gives us the minimum value (the smallest value), the first quartile (quarter of measurements, the 25% mark), the median (middle point), the mean (arthimitic mean), 3rd Quartile (75% value) and the maximum value (the largest value in the list of observations). This helps give us a quick insight into the data and where the observations range and what the skew may look like. 
+
+```{r}
+hist.ctrl<-hist(plant.growth$weight[plant.growth$group=='ctrl'], main="Histogram of CTRL Group")
+hist.trt1<-hist(plant.growth$weight[plant.growth$group=='trt1'], main="Histogram of TRT1 Group")
+hist.trt2<-hist(plant.growth$weight[plant.growth$group=='trt2'], main="Histogram of TRT2 Group")
+hist.ctrl
+hist.trt1
+hist.trt2
+```
+The control group seems to have a mean between 5.0 and 5.5 with a somehwat symmetrical bell shaped curve suggesting this may be a normal distribution (further testing required to verify). The histogram of the TRT1 group appears to be much less symmetric without a clear peak suggesting the mean is somewhere between 4.0 and 5.0, a marked differnece from the control. There is also a gap in the observations which may suggest a possible outlier for the group. This is skewed and falls under the category of potentially non normal distribution. 
+The last histogram of TRT2 shows a histogram that looks more normal than TRT1 and looks similar the most similar to the control out of the two test groups. There is less of a skew to this one versus TRT1 which indicates that the skew may not be the result of an outlier as with TRT2. \newpage
+
+
+
+
+8. Create a boxplot of the plant growth data, using the model “weight ~ group.” What  can you say about the differences in the groups by looking at the boxplots for the different groups? 
+
+```{r}
+plant.boxplot<-boxplot(weight~group, data=plant.growth)
+```
+
+
+
+In the boxplots for each of the groups we can see that the boxplots mimic the data represented in the histograms, however it is easier to see some of the suspected distributions of the data. Specifically for TRT1 we can see that there was indeed a outlier as represented by the circle above the upper IQR. The mean for the group however is well centered in the box which is a better fitment than either the control group or the TRT2 group where each is skewed upward and downward respectively. This also shows us that the largest difference in means between groups appears to be between the control group and the TRT1 group where as the control group and the TRT2 group appear to be the most similar (least amount of difference between means).
+\newpage 
+
+9. Run a t-test to compare the means of ctrl and trt1 in the PlantGrowth data. Report and  interpret the confidence interval. Make sure to include a carefully worded statement  about what the confidence interval implies with respect to the population mean difference between the ctrl and trt1 groups.  
+
+
+```{r}
+ctrl.v.trt1<-t.test(plant.growth$weight[plant.growth$group=="ctrl"], plant.growth$weight[plant.growth$group=='trt1'])
+ctrl.v.trt1
+```
+
+
+The population 95% confidence interval is [-0.28752,1.02952] (*rounded). What this means is that there is a 95% chance that the true population mean difference lies between these two values, and a 5% chance that it is outside this range of values. We can also observe that the confidence interval generated includes zero, which means that there is a possibility that the true mean difference between the two populations is in fact zero, or in other words, there is no statistically significant difference between the two means. This is further verified by the fact that the p-value for this test is well above an alpha of 0.05, further showing that the difference is not statistically significant. 
+
+\newpage 
+
+10. Run a t-test to compare the means of ctrl and trt2 in the PlantGrowth data. Report and  interpret the confidence interval. 
+
+```{r}
+ctrl.v.trt2<-t.test(plant.growth$weight[plant.growth$group=="ctrl"], plant.growth$weight[plant.growth$group=='trt2'])
+ctrl.v.trt2
+```
+ 
+
+Here we can see the 95% confidence interval generated is [-0.98287212,-0.00512787]. This is in contrast to the previous confidence interval as it does not include zero. However, this confidence interval has the same meaning as the last, that is, there is a 95% chance the true mean difference exists within this confidence interval and a 5% chance it does not. The fact that zero is not contained within the interval suggest that this mean difference is statistically significant. This is further backed up by the p-value for the test which is 0.0479 which is just under our alpha level of 0.05 (for a 95% confidence interval) which also suggest the mean difference between the control group and TRT2 is statistically significant. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

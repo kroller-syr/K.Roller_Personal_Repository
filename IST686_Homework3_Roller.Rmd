@@ -1,0 +1,104 @@
+---
+title: 'Homework #3'
+author: "Kent Roller"
+date: "2024-04-19"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+2. For the remaining exercises in this set, we will use one of R’s built-in data sets, called  the “ChickWeight” data set. According to the documentation for R, the ChickWeight  data set contains information on the weight of chicks in grams up to 21 days after hatch‑  ing. Use the summary(ChickWeight) command to reveal basic information about the  ChickWeight data set. You will find that ChickWeight contains four different variables.  Name the four variables. Use the dim(ChickWeight) command to show the dimensions  of the ChickWeight data set. The second number in the output, 4, is the number of col‑  umns in the data set, in other words the number of variables. What is the first number?  Report it and describe briefly what you think it signifies. 
+
+```{r}
+c.weight<-ChickWeight
+summary(c.weight)
+dim(c.weight)
+head(c.weight)
+library(tidyverse)
+glimpse(c.weight)
+```
+The four variables in the data set are: weight, Time, Chick, and Diet. The dimensions of the data set are 578x4, where 4 represents the number of columns and 578 represents the number of rows, in this case each row representing the measurements of one chick. \newpage 
+
+3. When a data set contains more than one variable, R offers another subsetting operator,  , to access each variable individually. For the exercises below, we are interested only  in the contents of one of the variables in the data set, called weight. We can access the  weight variable by itself, using the , with this expression: ChickWeightweight. Run  the following commands, say what the command does, report the output, and briefly  explain each piece of output:  summary(ChickWeightweight) *edited question for use in markdown
+
+```{r}
+summary(c.weight$weight)
+# Summary() gives us the statistical fivenum sum for the weight column specified by c.weight$weight, so we are only looking at the values from the weight column. The fivenum sum consist of the Min, 1st quartile, Median, Mean, 3rd Quartile, and Max value for the column. 
+head(c.weight$weight)
+# When using head() it displays the first few entries of whatever is selcted. In this case since we have specified c.weight$weight, like with summary, we are only looking at the observations in the weight column. As seen we have the first 6 observations weight displayed as output for this command. Can be used on the whole table or per variable as shown here. 
+mean(c.weight$weight)
+# mean() displays the mean of whatever value is inside of (), in this case we are displaying the mean of the weight column specified by c.weight$weight.The mean of the weights is 121.8183 as shown by the output below. 
+my.c.wts<-c.weight$weight
+# The above command generates a new varibale called my.c.wts which is made of the c.weight$weight column. These are identical to the values found in the table just stored in a new variable so further manipulation can be performed without changing the original table. 
+quantile(my.c.wts,0.50)
+# Quantile shows the specified quantile, here we specified the 0.50 quantile which is the median and gives us an output of 50% (the median value) and a value of 103 for the median.  
+```
+
+
+ \newpage 
+ 
+ 4. In the second to last command of the previous exercise, you created a copy of the  weight data from the ChickWeight data set and put it in a new vector called myChkWts.  You can continue to use this myChkWts variable for the rest of the exercises below. Create a histogram for that variable. Then write code that will display the 2.5% and 97.5%  quantiles of the distribution for that variable. Write an interpretation of the variable,  including descriptions of the mean, median, shape of the distribution, and the 2.5%  and 97.5% quantiles. Make sure to clearly describe what the 2.5% and 97.5% quantiles  signify.  
+ 
+```{r}
+hist(my.c.wts)
+quantile(my.c.wts, c(0.025,0.975))
+mean(my.c.wts)
+median(my.c.wts)
+```
+ 
+ From viewing the histogram of my.c.wts we can see that there is a rightward skew to the histogram which most likely means that the mean is to the right of the median which is caused by the skew in the histogram. We can verify this by looking at the values for the mean and median for my.c.wts, where the mean is ~121 and the median is ~103, which confirms the mean is to the right of the median. 
+ When looking at the output for the quantile() we can see the lower 2.5% and upper 97.5% of the values. These values represent the tails of the data and combined account for the outer 5% of values, where the 67-95-99 rule comes from, the 2.5% and 97.5% values represent everything beyond the second quartile, or in other words, the tails of the data. 
+ 
+ \newpage 
+ 
+ 5. Write R code that will construct a sampling distribution of means from the weight data (as  noted above, if you did exercise 3 you can use myChkWts instead of ChickWeight$weight  to save yourself some typing). Make sure that the sampling distribution contains at least  1,000 means. Store the sampling distribution in a new variable that you can keep using.  Use a sample size of n = 11 (sampling with replacement). Show a histogram of this distribution of sample means. Then, write and run R commands that will display the  2.5% and 97.5% quantiles of the sampling distribution on the histogram with a vertical  line. 
+
+```{r}
+sampling.distribution<-replicate(1000,mean(sample(my.c.wts, size=11, replace=TRUE)), simplify=TRUE)
+hist(sampling.distribution)
+abline(v=quantile(sampling.distribution,0.025))
+abline(v=quantile(sampling.distribution,0.975))
+```
+ 
+ 
+Performed instructions as listed in question. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 

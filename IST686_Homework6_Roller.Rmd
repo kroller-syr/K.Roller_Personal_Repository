@@ -1,0 +1,85 @@
+---
+title: "Homework 6"
+author: "Kent Roller"
+date: "2024-05-11"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1. The data sets package (installed in R by default) contains a data set called InsectSprays  that shows the results of an experiment with six different kinds of insecticide. For each  kind of insecticide, n = 12 observations were conducted. Each observation represented the count of insects killed by the spray. In this experiment, what is the dependent variable (outcome) and what is the independent variable? What is the total number  of observations? 
+
+```{r}
+sprays<-InsectSprays
+```
+
+In this experiment the dependent variable is the number of insects killed and the independent variable is the type or factor of spray (since the type of spray is converted to a factor). The total number of observations is 72 observations with 2 variables (144 total entries).
+\newpage 
+
+
+2. After running the aov() procedure on the InsectSprays data set, the “Mean Sq” for spray  is 533.8 and the “Mean Sq” for Residuals is 15.4. Which one of these is the between-groups variance and which one is the within-groups variance? Explain your answers  briefly in your own words.\newline 
+
+The "Mean Sq for Spray" with a value of 533.8 reperesents the between groups variability. This is a value representing the total variation in the means measured between groups being observed. This is the overall difference in means between all groups. The "Mean Sq for Residuals" with a value of 15.4 represents the within-groups variance. The residual is a measure of variance for our observed means compared to the sample mean. In other words an indicator for "how far" our observation was from the sample mean for a given value. \newpage
+
+
+3. Based on the information in question 2 and your response to that question, calculate an  F-ratio by hand or using a calculator. Given everything you have earned about F-ratios,  what do you think of this one? Hint: If you had all the information you needed for a Null  Hypothesis Significance Test, would you reject the null? Why or why not? \newline  
+Using the formula F=VBG/VWG = 533.8/15.4 = 34.66. Typically the larger the F-statistic the smaller the p-value, without referring to a distribution table to see what the critical value is its difficult to make the determination however. This is due to the small degrees of freedom which cause the critical value for the F-statistic to scale drastically at lower values. \newline 
+If I remember correctly, the critical value can be found by using the F-table and degrees of freedom. We have 6 factors so k-1=5 DoF for the numerator and n-k = 72-6 = 66 DoF for the numerator. So, thats something like F(0.05,5,66). Referring to a F-distribution table, and the table for denominator jumps from 60-120, so we will go with an approximation based on the 60 value which gives us a critical value of ~2.37. Since we want the F-ratio found to be larger than the critical value, we have success, as 34.66>2.37.\newline
+So, in summation, given this information, since our F-ratio is larger than the critical value then, we would reject the null hypothesis in favor of the alternative. Because our F-value is larger than the critical value it means that our p-value will be smaller than the 0.05 alpha level (because we used an alpha=0.05 F-table). (Didnt think I would be seeing my old tables again so soon, yay stats background.)
+\newpage
+
+
+4. Continuing with the InsectSprays example, there are six groups where each one has n  = 12 observations. Calculate the degrees of freedom between groups and the degrees  of freedom within groups. Explain why the sum of these two values adds up to one less  than the total number of observations in the data set.\newline  
+
+
+The DoF between groups is 5 and within groups is 66 as found in the above question. When added together they make 71. Mathematically this makes sense because Total DoF = n-1, or 72-1=71. Since the total DoF is the sum of the variation between group and the variation within groups this makes sense. \newpage 
+
+
+5. Use R or R-Studio to run the aov() command on the InsectSprays data set. You will  have to specify the model correctly using the “~” character to separate the dependent  variable from the independent variable. Place the results of the aov() command into a  new object called insectResults. Run the summary() command on insectResults and  interpret the results briefly in your own words. As a matter of good practice, you should  state the null hypothesis, the alternative hypothesis, and what the results of the null  hypothesis significance test lead you to conclude. 
+
+
+```{r}
+insect.results<-aov(count~spray,data=sprays)
+summary(insect.results)
+```
+
+
+Here we can see some of the information we have either been given or found up to this point. We can see we have 5 and 66 DoF for the observaiton and residuals. We can also see we have the same Mean Sq values given to us in the previous step, and we can see that our F-value matches our previously calculated value using the VBG/VWG formula. The newest information presented in this summary output is an actual value for the p-value, which as expected in the previous step, is very very small. \newline
+For our hypothesis test we have the following: \newline
+Ho: The difference in means between factors is zero (There exist no differnece in the Insect Sprays) \newline 
+Ha: There does exist a statistically significant difference in the means between groups. (There is a difference in how many Insects one spray kills over another).\newline
+Given the previous findings and the p-value presented here, we would stand by our original assetion and state: We reject the null hypothesis in favor of the alternative as there does exist a statistically significant difference bewteen the groups means. \newpage
+
+
+6. Load the BayesFactor package and run the anovaBF() command on the InsectSprays  data set. You will have to specify the model correctly using the “~” character to separate the dependent variable from the independent variable. Produce posterior distributions with the posterior() command and display the resulting HDIs. Interpret the results  briefly in your own words, including an interpretation of the BayesFactor produced by the grouping variable. As a matter of good practice, you should state the two hypotheses that are being compared. Using the rules of thumb offered by Kass and Raftery  (1995), what is the strength of this result?  
+
+```{r}
+#install.packages("BayesFactor")
+library(BayesFactor)
+sprays.bayes<-anovaBF(count~spray, data=sprays)
+sprays.bayes.mcmc<-posterior(sprays.bayes, iterations=10000)
+boxplot(as.matrix(sprays.bayes.mcmc[,2:7]))
+summary(sprays.bayes.mcmc)
+sprays.bayes
+```
+
+Here we continue to examine the same hypothesis, is there a difference bewtween bug sprays, where: \newline 
+Ho: There exist no statistically significant diffence in bug sprays ( the mean difference across groups is equal to 0) \newline 
+Ha: There does exist a statistically significant difference between the means of the groups, or, the effectiveness of each spray type. \newline 
+When looking at the Bayes Factor Analysis we can see that we have a value of 15,067,060,000,000. This value is much much larger than the value of 150. According to Kass and Raftery, any value over 150 indicates a very strong probablity of the null hypothesis being rejected. As such we would state based on these results that we reject the null hypothesis in favor of the alternative, suggesting that there does exist a statistically significant difference in bug srpays, and further confirming results found previously. 
+
+
+
+
+
+
+
+
+
+
+
+
