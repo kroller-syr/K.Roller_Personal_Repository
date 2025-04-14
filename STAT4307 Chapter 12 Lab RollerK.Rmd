@@ -1,0 +1,45 @@
+---
+title: "Chapter 12 Lab"
+author: "Kent Roller"
+date: "2023-04-29"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Need to find the total proportion of the population that has diabetes. 
+To do this will use : \newline 
+$\widehat{t}^2_{str}=N/n\Sigma (n_h/m_h)r_h$\newline
+1st\newline
+```{r}
+a<-(241/96)*(86)
+b<-(112/45)*(17)
+c<-(174/35)*(29)
+d<-(472/47)*(8)
+N.n<-100000/1000
+est<-N.n*sum(a+b+c+d)
+est
+```
+
+
+So based on this estimate the total number of the population that has diabetes is 48271.88.
+
+Using Raos estimator for variance: 
+```{r}
+N<-100000
+n<-1000
+V<-N*(N-1)*0.00089313+(N^2/n-1)*(1-n/n)*0.992310
+se<-sqrt(V)
+se
+lower<-est-qnorm(0.975)*se
+upper<-est+qnorm(0.975)*se
+
+upper
+lower
+```
+
+For a 95% confidence interval we have [42414.5,54129.26]. Here we can see that the total estimate falls within our confidence interval. What this means is that our confidence interval of between 42415 and 54129 members of the population will capture the true mean of 48271 members of the population 95% of the time. 

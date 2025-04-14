@@ -1,0 +1,102 @@
+---
+title: "STAT 4037 Lab1 R"
+date: "2023-01-27"
+output:
+  pdf_document: default
+  pdf: default
+---
+## Name: Kent Roller
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Reading in the data set using file.choose and read.csv because I kept getting errors about empty columns using read table and when I attempted to pass the fill=TRUE argument into the command it botched the data set.  
+
+```{r}
+file.choose()
+
+drugs<-read.csv("C:\\Users\\super\\Downloads\\drugsurv.csv", header=TRUE)
+
+head(drugs)
+
+attach(drugs)
+
+names(drugs)
+```
+
+## Table and Graph for Gender
+
+```{r}
+table(Gender)
+counts<-table(Gender)
+barplot(counts)
+pie(counts)
+```
+
+## Creating a Histogram for age
+
+```{r}
+hist(Age)
+hist(Age, col="red")
+```
+
+## Recoding age in three groups:
+## If there are only two classes to use:
+```{r}
+agenew<-ifelse(Age<50, "young", "old")
+table(agenew)
+```
+
+## If there are THREE groups
+```{r}
+agegroup3<-ifelse(Age<40, "young", ifelse(Age>40 & Age<60, "middle aged", "old"))
+table(agegroup3)
+```
+
+
+## Creating a new Quantitative Variable 
+```{r}
+agenow<-Age+15
+```
+
+
+## Cross Tabulation of gender and marijuana
+```{r}
+counts<-table(Gender,Mariguana)
+barplot(counts, beside=TRUE, legend=rownames(counts))
+barplot(counts, beside=FALSE, legend=rownames(counts))
+```
+
+## Creating a subset formed just by the ever smokers 
+```{r}
+smokersonly<-drugs[Ever.Smoker=="YES",]
+head(smokersonly)
+hist(smokersonly$Age)
+```
+
+## Calculating correlation between age and years of education 
+```{r}
+cor(Age,Education)
+plot(Age,Education)
+plot(Age, Education, xlab="Age", ylab="Years of Education")
+```
+
+## More things to do with R
+```{r}
+mean(Age)
+var(Age)
+summary(Age)
+sd(Age)
+tapply(Age, Gender, summary)
+boxplot(Age)
+boxplot(Age~Gender, horizontal=TRUE, xlab="Age")
+mytable<-table(Gender,Smoking.Status)
+mytable
+margin.table(mytable,1)
+margin.table(mytable,2)
+prop.table(mytable,1)
+prop.table(mytable,2)
+```
+
+
+

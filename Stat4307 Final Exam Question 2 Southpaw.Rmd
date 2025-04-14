@@ -1,0 +1,41 @@
+---
+title: "Stat4307 Final Exam Question 2 Southpaw"
+author: "Kent Roller"
+date: "2023-04-30"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Create a data frame with the given information
+df <- data.frame(
+  district = c(1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4),
+  school = rep(1:3, times = 4),
+  children = c(130, 150, 160, 110, 120, 100, 89, 130, 100, 100, 120, 150),
+  left_handed = c(10, 15, 7, 8, 10, 7, 5, 15, 8, 9, 10, 22)
+)
+
+# Calculate the estimated total number of left-handed children in Knoxville
+N <- 15 * 3  # total number of schools
+n <- 4  # number of clusters sampled
+m <- 3  # number of schools per cluster
+t1 <- sum(df$left_handed)  # sum of left-handed children across all sampled schools
+t2 <- sum(df$children)  # sum of all children across all sampled schools
+t <- (t1 / t2) * N  # estimated total number of left-handed children
+t  # print the estimate
+
+# Calculate the standard error of the estimate
+PSU_var <- sum((t1 / t2 - df$left_handed / df$children) ^ 2) / (n - 1)
+se <- sqrt(PSU_var / m * (N - n) / (N - 1))
+
+# Calculate the 95% confidence interval
+alpha <- 0.05
+t_lower <- t - qt(1 - alpha / 2, df = N - n) * se
+t_upper <- t + qt(1 - alpha / 2, df = N - n) * se
+cat("Estimate of total number of left-handed children in Knoxville:", t, "\n")
+cat("95% confidence interval: [", t_lower, ",", t_upper, "]\n")
+```
+

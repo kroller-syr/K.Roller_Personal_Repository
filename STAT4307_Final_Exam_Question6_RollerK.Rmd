@@ -1,0 +1,36 @@
+---
+title: 'Stat4307 Final Exam Question 6'
+author: "Kent Roller"
+date: "2023-05-01"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Bringing in the information:
+```{r}
+x<-c(90,86,91,79,83,76,82,83,77,59,88,73,79,84,80,77,89,74,67,83,90,74,68,81,69,73,84,89,72,77)
+y<-c(33,50,43,33,21,36,45,18,35,19,49,22,41,60,55,20,55,37,29,21,70,53,13,56,44,32,51,60,19,40)
+```
+
+Finding estimates using n=1800 (1800 pages in the dictionary)
+```{r}
+n<-1800
+x.est<-mean(x)
+y.est<-mean(y)
+prob.yest<-y.est/x.est
+se.x<-sqrt(var(x)/length(x))
+se.y<-sqrt(var(y)/length(y))
+se.prob.y<-sqrt((y.est/x.est^2)^2*var(x)+(-1/x.est)^2*var(y))
+x.est*n
+y.est*n
+prob.yest
+se.x*sqrt(n)
+se.y*sqrt(n)
+se.prob.y
+```
+

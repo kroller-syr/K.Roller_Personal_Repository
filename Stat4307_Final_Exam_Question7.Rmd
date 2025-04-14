@@ -1,0 +1,47 @@
+---
+title: "Stat4307 Final Exam Question 7 Cherry"
+author: "Kent Roller"
+date: "2023-04-30"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Import Cherry data set from CSV
+```{r}
+cherry<-read.csv("C:\\Users\\super\\Downloads\\cherry.csv")
+```
+
+a.Plot volume vs. diameter of trees 
+```{r}
+plot(cherry$diameter, cherry$volume, data=cherry, xlab=("Tree Diameter"), ylab=("Tree Volume"), main=("Tree Diameter vs. Volume"), pch=19)
+```
+
+b.Suppose that these trees are an SRS from a forest of N=2967 trees and that the sum of the diameters for all trees in the forest is $t_x=41,835in$. Use ratio estimation to estimate the total volume for all trees in the forest. Give a 95% confidence interval. 
+```{r}
+tx<-41835
+n<-nrow(cherry)
+N<-2967
+vol.bar<-mean(cherry$volume)
+tot.vol.est<-(tx/n)*N*vol.bar
+se<-sqrt((tx^2/n^2)*((N-n)/(N-1))*var(cherry$volume))
+lower<-tot.vol.est-qt(0.975,N-1)*se
+upper<-tot.vol.est+qt(0.975,N-1)*se
+cat("Estimated total volume of all Trees:", tot.vol.est, "cubic feet\n")
+cat("95% Confidence Interval:[",lower,",",upper,"] cubic feet\n")
+```
+
+Here we can see that the estimated total volume for all trees in the forest is 120,804,988 cubic feet, with a 95% confidence interval of between 120,761,713 cubic feet and 120,848,263 cubic feet.\newline
+
+c. Use regression estimation to estimate the total volume for all trees in the forest. Give a 95% confidence interval. 
+```{r}
+lin.mod <- lm(cherry$volume ~ cherry$diameter + cherry$height, data=cherry)
+lin.mod
+
+
+```
+
+
+

@@ -1,0 +1,209 @@
+---
+title: "Lab 4"
+author: "Kent Roller"
+date: "2023-03-26"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+```{r}
+library(SDaA)
+data(coots)
+attach(coots)
+library(tidyverse)
+```
+
+4. One Stage Cluster Sampling 
+Selecting a random sample of two clusters: 
+```{r}
+##clusterd<-1:100
+##sample(clusterd,2)
+## [1] 50 5
+## Commenting out input after initial knit to prevent new numbers ##being generated each time because I knit multiple times per 
+```
+
+square #5: 8x5=40 
+square #50: 10x5=50
+N=100, n=2
+
+Calculate the estimated mean, the standard error, and the estimated total: 
+
+Cluster #5:\newline 
+$M_i=40$\newline
+$\bar{y}_i=40$\newline
+$t_i=40$\newline
+Cluster #50:\newline
+$M_i=50$\newline
+$\bar{y}_i=50$\newline
+$t_i=50$\newline
+
+$\widehat{\bar{y}}_r= \Sigma M_i\bar{y_i}/\Sigma M_i$\newline
+=40(40)+50(50)/90\newline
+=45.556\newline
+
+$\bar{M}=45$\newline
+$M^2_i(\bar{y}-\widehat{\bar{y}}_r)^2$\newline
+Cluster 5= 40^2 (40-45.66)^2 = 51257\newline    
+Cluster 50= 50^2 (50-45.66)^2 = 47089\newline
+$\Sigma M^2_i(\bar{y}-\widehat{\bar{y}}_r)^2$=98346\newline
+SE=sqrt(1-(2/100))(1/((2)(45)^2)(98346/1)$\approx 4.878$\newline
+
+N/n=100/2=50 \newline
+$\widehat{t}_{unb}$\newline
+=50(90)=4500\newline
+
+Estimated Mean= 45.66\newline
+Standard Error= 4.878\newline
+Estimated Total= 4500\newpage
+
+All equations used reflect the fact that the clusters are of uneven sizes, 5.16, 5.17, and 5.12 were used (in order)\newline
+
+Evidently I am supposed to have an n=20 not n=2 according to one of the problems below. So the above is for n=2, I will add the work for n=20 below. 
+```{r}
+clusterd<-1:10
+sample(clusterd,2)
+#first output was 3 and 4
+```
+
+N=100, n=20
+clusters 3 and 4
+
+Cluster 3:\newline
+Area 31:60\newline
+Area 32:18\newline
+Area 33:3\newline
+Area 34:60\newline
+Area 35:35\newline
+Area 36:36\newline
+Area 37:6\newline
+Area 38:12\newline
+Area 39:30\newline
+Area 40:20\newline
+
+Cluster 4:\newline 
+Area 41:45\newline
+Area 42:5\newline
+Area 43:12\newline
+Area 44:40\newline
+Area 45:2\newline
+Area 46:21\newline
+Area 47:8\newline
+Area 48:54\newline
+Area 49:27\newline
+Area 50:50\newline 
+
+Cluster #5:\newline 
+$M_i=40$\newline
+$\bar{y}_i=40$
+
+Calculate the estimated mean, the standard error, and the estimated total\newline
+
+Estimated total:\newline
+$\widehat{\bar{y}}_r= \Sigma M_i\bar{y_i}/\Sigma M_i$\newline
+```{r}
+area.c<-c(60,18,3,60,35,36,6,12,30,20,45,5,12,40,2,21,8,54,27,50)
+M.i<-20
+bar.y<-sum(area.c)/M.i
+hat.y<-20*(bar.y)/M.i
+hat.y
+bar.y
+N.n<-100/20
+t.unb<-N.n*(sum(area.c))
+t.unb
+
+
+```
+
+
+```{r}
+sqrt((1-(20/100))*(1/((20)*(33.9^2)))*(1690373/(20-1)))
+```
+Standard Error=1.759725
+
+$\widehat{t}_{unb}=$
+
+
+$\widehat{\bar{y}}_r$=27.2\newline
+SE=1.759725\newline
+Total Estimate=2720\newline
+
+From lab 2 had the following information:\newline
+$\bar{y}=34.1$\newline
+Total Area=2720\newline
+The estimates for the average value are the same as the values found in lab 2.  \newpage 
+
+
+
+6. The point estimator for totals and proportions: \newline 
+What other information would you need in order to estimate the total yield of the whole population of 150 farms?\newline
+We would want an measure of the Mean Square Within and Between to make sure the difference between the measurements obtained wasn't so great that we would be unable to make a determination from it. We would also want to know the ICC to give us an idea of the homogeneity within the clusters. This would also let us know if the sample size we have selected will yield a high enough precision to be useful, or whether we should consider a higher sample size or a different testing method altogether such as SRS. Additionally, is an acre a large enough size for each measurement to be able to accurately produce a usable estimate? \newline
+
+How would you obtain from equation 5.15 a point estimator for a population proportion when the variable of interest is categorical (yes/no) type?\newline
+For non categorical data (quantitative) we can use unbiased estimators to calculate a point estimator for the population proportion. However, when we are unable to use unbiased estimators, such as in cases like this question where the variable of interest is categorical we can use Ratio Estimation to estimate what proportion of responses were yes or no.\newpage
+
+
+8. Example 5.6 from the book\newline
+```{r}
+M<-c(20,26,24,34,26,28,19,32,17,21,26,26)
+ybar<-c(61.5,64.2,58.4,58,58,64.9,55.2,72.1,58.2,66.6,62.3,67.2)
+
+```
+Write the necessary R code to estimate the mean score in the population (equation 5.15)\newline
+$\widehat{\bar{y}}_r= \Sigma M_i\bar{y_i}/\Sigma M_i$\newline
+```{r}
+sum(ybar*M)/sum(M)
+#[1] 62.57191
+```
+
+Write the necessary R code to calculate the standard error (equation 5.17) \newline
+```{r}
+sqrt((1-(12/187))*(1/((12)*(24.92^2)))*(194827/(12-1)))
+#[1] 1.491378
+```
+
+Code provides same answer as the book 
+\newpage
+
+9. Two Stage Clustering Sample\newpage
+
+10. \newpage
+
+11. The egg example\newline
+
+The example on pages 186-188 is that of the mean volume of eggs. The clusters are clutches of eggs and the individuals or secondary sampling units are the eggs. The variable of interest is volume. 
+Assume you are given the following information:\newline
+$\#$ of eggs in each clutch\newline
+Mean volume of the eggs in the sample for each clutch\newline 
+Standard deviation in each sample\newline
+
+What R commands would allow you to do the calculations on page 188 
+```{r}
+Mi<-csize
+y.bar<-tapply(coots$volume,coots$clutch,mean)
+n.csize<-csize[seq(1,length(csize),2)]
+t.est<-n.csize*y.bar
+t.tot<-sum(t.est)
+Mi.s<-sum(n.csize)
+
+```
+To find $\widehat{\bar{y_r}}$
+```{r}
+y.est<-t.tot/Mi.s
+y.est
+```
+$\widehat{\bar{y_r}}=2.4906$\newline 
+
+To find $s^2_r$:
+```{r}
+#s.i.q[i]<-(coots$volume[2*i-1]-y.est[i])^2+(coots$volume[2*i]-y.bar[i])^2
+```
+
+
+
+
+
+
+
+
+

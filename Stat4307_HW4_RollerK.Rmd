@@ -1,0 +1,247 @@
+---
+title: "Stat 4307 HW4"
+author: "Kent Roller"
+date: "2023-04-05"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(kableExtra)
+library(GGally)
+library(SDaA)
+library(dplyr)
+library(readr)
+```
+
+Chap 4 
+
+3: Foresters want to estimate the average of trees in a stand. Determining age is cumbersome....\newline
+
+a. Draw a scatterplot of y vs x
+```{r}
+x<-c(12,11.4,7.9,9.0,10.5,7.9,7.3,10.2,11.7,11.3,5.7,8.0,10.3,12.0,9.2,8.5,7.0,10.7,9.3,8.2)
+y<-c(125,119,83,85,99,117,69,133,154,168,61,80,114,147,122,106,82,88,97,99)
+plot(x,y, xlab="Diameter of Tree", ylab="Age of Tree", pch=16)
+df<-as.data.frame(x=x,y=y)
+
+```
+
+b. Estimate the population mean age of the trees in the stand using ratio estimation and give and approximate standard error for your estimate.\newline
+
+Using the formulas for Ratio Estimation in a SRS\newline
+$t_y=\Sigma y_i$\newline
+$t_x=\Sigma x_i$\newline
+and the ratio is\newline
+B=$t_y/t_x=\bar{y}_u/\bar{x}_u$\newline
+$\widehat{B}=\bar{y}/\bar{x}=\widehat{t}_y/\widehat{t}_x$\newline
+$\widehat{t}_{yr}=\widehat{B}t_x$\newline
+$\widehat{\bar{y}}_r=\widehat{B}\bar{x}_U$\newline
+$e_i=y_i-\widehat{B}x_i$\newline
+$s^2_e=1/(n-1)\Sigma e^2_i$
+
+
+
+```{r}
+ty<-sum(y)
+tx<-sum(x)
+b<-ty/tx
+ybar<-mean(y)
+xbar<-mean(x)
+hatb<-ybar/xbar
+thatyr<-hatb*(tx)
+yhatbarr<-hatb*xbar
+yhatbarr
+ybar
+thatyr2<-ybar*(tx/xbar)
+thatyr
+thatyr2
+N<-1132
+e<-c()
+for(i in 1:length(y)){e[i]<-y[i]-(hatb*x[i])}
+e
+e2<-e^2
+e2
+s2<-(1/(20-1))*sum(e^2)
+s2
+xt<-N*xbar
+yt<-N*ybar
+se<-1132*sqrt(1-(20/1132))*((yt)/(thatyr))*(s2/sqrt(20))
+se
+```
+Mean age of the trees using Ratio Estimation: 107.4
+Standard Error of Estimate: 4571330
+
+c. Repeat (b) using Regression 
+
+
+```{r}
+lin.mod<-lm(y~x)
+lin.mod
+summary(lin.mod)
+xbar
+ybar
+yhatreg<-(-7.808)+12.250*(xbar)
+yhatreg
+rsids<-residuals(lin.mod)
+vary<-var(rsids)
+vary
+SE<-sqrt((1-(20/1132))*(vary)*(1-0.5893^2))
+SE
+```
+
+Mean age of the trees using Regression: 107.4032
+Standard Error: 14.31584
+
+d. Label estimates on the graph
+```{r}
+y2<-ybar
+y3<-xbar
+plot(x, y, type = "p", col = "blue", lwd = 2, 
+     xlab = "Tree Diameter", ylab = "Age of Trees", main = "Plot of Tree Age vs Size")
+points(y2, y3, col = "red", pch = 16, cex = 1.0)
+legend("topleft", legend = c("Data", "Ratio and Regression Means"), col = c("blue", "red"), 
+       pch = c(NA, 16), lwd = c(2, NA), cex = c(1, 1.5), pt.cex = 1.5)
+```
+\newpage
+
+9. Using the data set agrs estimate the total number of acres devoted to farming for two domains:\newline
+(a)Counties with fewer than 600 farms and (b)counties with more than 600 farms. Give standard errors for your estimates:\newline
+```{r}
+agsrs<-agsrs
+head(agsrs)
+agsrssmol<-subset(agsrs %>% filter(farms92 < 600 & farms87 < 600 & farms82 < 600))
+head(agsrssmol)
+agsrsbig<-subset(agsrs %>% filter(farms92 > 600 & farms87 > 600 & farms82 > 600))
+head(agsrsbig)
+a1<-mean(agsrssmol$acres92)
+a2<-mean(agsrssmol$acres87)
+a3<-mean(agsrssmol$acres82)
+xbarsmol<-(a1+a2+a3)/3
+xbarsmol
+n<-length(agsrssmol$county)
+testsmol<-xbarsmol*n
+testsmol
+
+c1<-mean(agsrsbig$acres92)
+c2<-mean(agsrsbig$acres87)
+c3<-mean(agsrsbig$acres82)
+xbarbig<-(c1+c2+c3)/3
+xbarbig
+testbig<-xbarbig*n
+testbig
+```
+
+Total estimated farming land (small domain):43,137,965\newline
+Total estimated farming land (big domain): 45,039,877\newline
+
+
+```{r}
+n
+z<-length(agsrs$acres92)
+z
+totsmol<-sum(agsrssmol$acres92)
+SEsmol<-(z*sqrt(1-(n/z))*(testsmol/totsmol)*((25012)/sqrt(n)))
+SEsmol
+
+totbig<-sum(agsrsbig$acres92)
+SEbig<-(z*sqrt(1-(n/z))*(testbig/totbig)*((25012)/sqrt(n)))
+SEbig
+```
+
+Total estimated farming land (small domain):43,137,965\newline
+SE for small domain: 465057.1\newline
+
+Total estimated farming land (big domain): 45,039,877\newline
+SE for big domain: 519892.5\newpage
+
+Exercises 2,4(a),5 and 8 from Chap 5\newline
+
+2. Senturia et.al describe a survey taken to study how many children have access to guns....\newline
+
+(a)\newline
+Suppose the quantity of interest is percentage of the households with guns. Describe why this is a cluster sample. What is the PSU? What is the SSU? Is it a one stage or two stage? How would you estimate the percentage of households with guns, and the standard error of your estimate.\newline
+
+This is a cluster sample because the population of interest is the entire population of households, but of course it is not feasible to interview every household in the population to get an idea of this percentage. And an SRS is also difficult to do on such a large scale. As such this is why clustering sampling would be chosen. The above IS a cluster sample because we have clustered the population by selecting a subset of the population and extrapolating information for the whole population based on this subset. We are examining those households that are coming into the clinic, these clinics make up our primary sampling units. Since we are giving the survey to every parent regardless of the reason of their visit then this is a one stage cluster sample. To estimate the percentage of households with guns then we could just compare the number of respondents who answered yes to the ones who answered no. Alternatively we would take means of the yes and no responses for each cluster and then take the average of responses to make a ratio. Specifically we want to use the formulas for one stage clustering and use the formulas for the population.\newline
+
+(b)\newline
+What is the sampling population for this study? Do you think this sampling procedure results in a representative sample of households with children? Why or Why not?\newline
+The sampling population is all of the parents coming into the clinics. No, I do not think this sampling procedure is representative of households with children. At least in the US, as depending on the work situation of the parents, the children may or may not have health care. In this case all children who live in households with guns but don't receive healthcare due to cost constraints will be under represented in this sample. Likewise, children who live with parents who addicted to drugs or alcohol and spend most of the day inebriated will be unlikely to receive regular checkups. And then of course parents who are not around, due to work such as on a graveyard shift, or are just inattentive will be unlikely to be represented. However in all of these cases, per personal experience, just because someone is in one of the above situations does not mean that they do not spend an obscene amount of money on firearms. As such, this sample will probably misrepresent the actual percentage of households with children that have guns, as it is only going to be looking at households that bother to bring their kids in to the clinic. \newpage
+
+4.\newline
+Survey evidence is often introduced in court cases involving trademark violation and employment discrimination...\newline
+(a)Explain why this is a cluster sample.\newline
+This is a cluster sample because instead of taking an SRS of all magazines of interest we are taking a specific year, in this case 1988, and then taking an SRS from the publications released in that year. Additionally, if ignoring the year then the 25 magazines serves as the cluster or PSU and all of the articles count as the SSU. \newpage
+
+5.\newline
+A language school owner takes an SRS of 10 of the 72 introductory Spanish courses....\newline
+(a)\newline
+Estimate the total number of students planning a trip to the Spanish speaking country in the next year and give a 95% CI\newline
+
+```{r}
+spanish <- read_csv("C:/Users/super/Downloads/spanish.csv")
+head(spanish)
+takingtrip<-spanish$trip[spanish$trip==1]
+length(takingtrip)
+196/10
+19.6*72
+63/196
+0.32*1411.2
+```
+
+The number of students from the sample planning to take a trip are 63.\newline
+The estimated total number of students planning to take a trip is 452 students.\newline 
+The 95% CI is (403.4,501.6)\newline
+(b)\newline
+Estimate the mean vocabulary test score for Introductory Spanish students in the language school and give a 95%\newline
+```{r}
+mean(spanish$score)
+66.79592
+Mi<-spanish$class
+Mi
+ybar<-c()
+for(i in 1:length(Mi)){ybar[i]<-66.79592*Mi[i]}
+sum(ybar)/sum(Mi)
+
+```
+
+The mean vocabulary test score for Introductory Spanish students is 66.8.\newline
+The 95% CI is (63.4,70.5)\newpage
+
+8.A homeowner with a large library needs to estimate the purchase cost and replacement value of the book collection for insurance purposes. She has 44 shelves containing books and selects 12 at random....\newline
+(a)\newline
+Draw side-by-side boxplots for the replacement cost of the books on each shelf. Does it appear that the means are about the same? The variances?
+```{r}
+books<-books
+means_replace <- aggregate(replace ~ shelf, data = books, FUN = mean)
+means_replace
+boxplot(books$replace~books$shelf, col="skyblue", xlab="Shelf", ylab="Avg Replacement Cost", main="Replacement cost Avg by Shelf")
+
+```
+The means and the variances for each shelf seem to differ by a large amount. Some shelves average around 10, while others average 50, some have small or no tails, some have tails to go to the maximum value while the mean is close the minimum. Overall I would say that no, neither the means nor the variances appear to be the same from shelf to shelf.\newline 
+
+(b)\newline
+Estimate the total replacement cost of the library and find the standard error of your estimate. What is the estimated coefficient of variation?\newline
+```{r}
+cost1<-sum(books$replace)
+t_hat<-c()
+for(i in 1:length(means_replace)){t_hat[i]<-means_replace[i]*5}
+t_hat
+t_hat1<-c(48,31,46,36,209,149,259,306,252,183,271,33)
+M_i<-5*12
+y_bar_hat<-(sum(t_hat1))/(sum(M_i))
+y_bar_hat
+ti.minus.Mi<-c()
+for(i in 1:length(t_hat1)){ti.minus.Mi[i]<-(t_hat1[i]-(5*y_bar_hat))^2}
+ti.minus.Mi
+s_sqr<-(1/(60-1))*sum(ti.minus.Mi)
+44*60*y_bar_hat
+
+```
+The total estimated replacement cost of the library is $80212, with an average cost of $30.38 per book. The standard error is 8.87313.\newline 
+
+(c)\newline
+Estimate the average replacement cost per book along with the standard error.\newline
+The average replacement cost per book as found in the last step is $30.38 per book. 
+
