@@ -1,0 +1,185 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+# Introduction to Data Science HW 4
+##### Copyright Jeffrey Stanton, Jeffrey Saltz, and Jasmina Tacheva
+
+### IST 687
+### Kent Roller 
+### Homework 4
+### Due Date: 2/09/2024
+### Submission Date: 2/05/2024
+
+
+```{r}
+# Enter your name here: Kent Roller 
+```
+
+### Attribution statement: (choose only one and delete the rest)
+
+
+```{r}
+# 1. I did this homework by myself, with help from the book and the professor.
+
+```
+
+Reminders of things to practice from previous weeks: <br>
+Descriptive statistics: 	mean( ) max( ) min( )<br>
+Coerce to numeric:		as.numeric( )<br>
+
+## Part 1: Use the Starter Code 
+
+Below, I have provided a starter file to help you. <br>
+
+Each of these lines of code **must be commented** (the comment must that explains what is going on, so that I know you understand the code and results).
+
+
+```{r}
+# Loads the jsonlite library which is needed to import JSON files
+library(jsonlite)
+# Loads the url into a variable that can be called later
+dataset <- url("https://intro-datascience.s3.us-east-2.amazonaws.com/role.json")
+# using jsonlite to read in the JSON format from the URL we just stored in dataset into a new variable called readlines
+readlines <- jsonlite::fromJSON(dataset)
+# Brings data set read in and imports it as a dataframe into the global enviroment in R
+df <- readlines$objects$person
+```
+
+A.	Explore the **df** dataframe (e.g., using head() or whatever you think is best).
+
+
+```{r}
+head(df)
+ncol(df)
+nrow(df)
+
+```
+
+B.	Explain the dataset <br>
+o	What is the dataset about? <br>
+The dataset contains information about US senators, like age, name, and social media accounts \newline 
+o	How many rows are there and what does a row represent?<br>
+There are 100 rows and each row represents an observation, or the information recorded for each senator, or a senator, however you want to look at it. \newline 
+o	How many columns and what does each column represent?<br>
+There are 17 columns and the columns represent the variables/attributes of the data set such as first/last name, gender, and age. \newline
+
+
+
+C. What does running this line of code do? Explain in a comment:
+
+
+```{r}
+vals <- substr(df$birthday,1,4)
+# The above code creates a new varibale called "vals", the variable calls the substr function to then pull information from the df$birthday column, specifically selecting the 1,4 character strings stored in order to output the entire year i.e. 1951, 1933 etc. 
+```
+
+D. Create a new attribute 'age' - how old the person is 
+**Hint:** You may need to convert it to numeric first.
+
+
+```{r}
+library(tidyverse)
+df<- df %>% mutate(
+  birthday = as.Date(birthday, format= "%Y-%m-%d"),
+  birth.year <-as.numeric(format(birthday, "%Y")),
+  current.year <-as.numeric(format(Sys.Date(), "%Y"))
+)
+df$age<- df$`current.year <- as.numeric(format(Sys.Date(), "%Y"))`-df$`birth.year <- as.numeric(format(birthday, "%Y"))`
+# I could have just used a dummy variable here that had the value 2024 stored for all values but where is the fun in that. Also probably unnecessary to have birthday code in for two lines, could probably just call straight from the column with a different command or sub-setting. 
+
+head(df$age)
+```
+
+E. Create a function that reads in the role json dataset, and adds the age attribute to the dataframe, and returns that dataframe
+
+
+
+```{r}
+get.senator.data <- function() {
+  library(jsonlite)
+  library(tidyverse)
+  
+  dataset <- "https://intro-datascience.s3.us-east-2.amazonaws.com/role.json"
+  readlines <- fromJSON(dataset)
+  df1 <- readlines$objects$person
+  
+  # Modified to make cleaner than version above
+  df1 <- df1 %>%
+    mutate(
+      birthday = as.Date(birthday, format = "%Y-%m-%d"),
+      birth_year = year(birthday), 
+      current_year = year(Sys.Date()),
+      age = current_year - birth_year 
+    ) %>%
+    #This line just removes the extra columns added above for calc
+    select(-c(birth_year, current_year))
+  
+  return(df1)
+}
+
+df1<-get.senator.data()
+
+# I can't get the dataframe added to the global environments inside the function. I can call the function with a variable and it populates correctly but I cant get it to make the function load the dataframe into the global environment. I have tried df1<<-readlines$objects$person to force it into the GE, and this works as far as getting the dataframe in, but then it doesn't apply the mutate correctly and fails to create the age variable. All of that is to say hopefully this an acceptable solution and if not please show the code needed to make this work in the created function. 
+
+head(df1$age)
+```
+
+F. Use (call, invoke) the function, and store the results in df
+
+
+```{r}
+# I do not understand why I would need to use call or invoke for the function and what results I am supposed to be storing unless this is where the dataframe created with the function is supposed to be added to the GE, in which case:
+
+senator.data2<-get.senator.data()
+```
+
+## Part 2: Investigate the resulting dataframe 'df'
+
+A.	How many senators are women? 
+
+
+```{r}
+female.count<- senator.data2 %>% filter(gender_label=="Female")%>% summarise(count=n()) %>%
+  pull(count)
+
+female.count
+```
+There are 24 women senators. \newline 
+
+B.	How many senators have a YouTube account?  
+
+
+```{r}
+youtube.senator<- senator.data2 %>% filter(!is.na(youtubeid)) %>% summarise(count=n()) %>% pull(count)
+
+youtube.senator
+```
+There are 73 senator who have a YouTube account. \newline 
+
+C.	 How many women senators have a YouTube account?
+
+
+```{r}
+f.youtube.senator<- senator.data2 %>% filter(gender_label=="Female" & !is.na(youtubeid)) %>% summarise(count=n()) %>% pull(count)
+
+f.youtube.senator
+```
+There are 16 female senators with YouTube accounts. \newline 
+
+D.	Create a new dataframe called **youtubeWomen** that only includes women senators who have a YouTube account.   
+
+
+```{r}
+youtube.women<-senator.data2 %>% filter(gender_label=="Female" & !is.na(youtubeid))
+```
+
+E.	Make a histogram of the **age** of senators in **youtubeWomen**, and then another for the senetors in **df**. Add a comment describing the shape of the distributions.
+
+
+```{r}
+hist(youtube.women$age)
+hist(df$age)
+# Both histograms seem to show a fairly normal distribution, however the women's mean and median seems slightly shifted to the right versus the overall df shape which is slightly to the left (Womens being 70-80 and the overall combined being 60-70 years of age). There is also a noticable gap in the womens histogram versus the overall histogram. 
+```

@@ -1,0 +1,187 @@
+# Intro to Data Science - HW 9
+##### Copyright Jeffrey Stanton, Jeffrey Saltz, Christopher Dunham, and Jasmina Tacheva
+
+### IST 687
+### Kent Roller
+### Due Date: 3/15/24
+### Submission Date: 3/13/24
+
+```{r}
+# Enter your name here: Kent Roller 
+```
+
+### Attribution statement: (choose only one and delete the rest)
+
+
+```{r}
+# 1. I did this homework by myself, with help from the book and the professor.
+
+```
+
+**Text mining** plays an important role in many industries because of the prevalence of text in the interactions between customers and company representatives. Even when the customer interaction is by speech, rather than by chat or email, speech to text algorithms have gotten so good that transcriptions of these spoken word interactions are often available. To an increasing extent, a data scientist needs to be able to wield tools that turn a body of text into actionable insights. In this homework, we explore a real **City of Syracuse dataset** using the **quanteda** and **quanteda.textplots** packages. Make sure to install the **quanteda** and **quanteda.textplots** packages before following the steps below:<br>
+
+## Part 1: Load and visualize the data file  
+A.	Take a look at this article: https://samedelstein.medium.com/snowplow-naming-contest-data-2dcd38272caf and write a comment in your R script, briefly describing what it is about.<br>
+
+
+```{r}
+# There was a snowplowing naming contest in the city of Syracuse, but there was some dissatisfaction about the names chosen. The data set then looks at the submissions for the contest to compare what names were chosen versus what names were submitted to see if they match. According to the article the names that won were only submitted a maximum of two times, were as other names were submitted many more times. 
+```
+
+B.	Read the data from the following URL into a dataframe called **df**:
+https://intro-datascience.s3.us-east-2.amazonaws.com/snowplownames.csv
+
+
+```{r}
+url<-("https://intro-datascience.s3.us-east-2.amazonaws.com/snowplownames.csv")
+
+library(tidyverse)
+
+df<-read_csv(url)
+```
+
+C.	Inspect the **df** dataframe – which column contains an explanation of the meaning of each submitted snowplow name? Transform that column into a **document-feature matrix**, using the **corpus()**, **tokens()**, **tokens_select(), and **dfm()** functions. Do not forget to **remove stop words**.
+
+Hint: Make sure you have libraried *quanteda*
+
+
+```{r}
+library(quanteda)
+# Convert the meaning column which contains the name descriptions to corpus to be used with tokens in the next step
+corpus.data<-corpus(df$meaning)
+#Use the corpus data to shape the tokens data
+tokens.data<-tokens(corpus.data)
+#Remove stopwords from the tokens data
+tokens.data<-tokens_select(tokens.data, pattern=stopwords("en"), selection="remove")
+#Changing code to use regex to remove punctuation and numbers
+tokens.data<-tokens_remove(tokens.data, pattern=c(stopwords("en"), "\\p{P}", "\\p{N}"), valuetype="regex")
+# Port into a new dataframe 
+dfm.data<-dfm(tokens.data)
+
+```
+
+D.	Plot a **word cloud**, where a word is only represented if it appears **at least 2 times** . **Hint:** use **textplot_wordcloud()**:
+
+Hint: Make sure you have libraried (and installed if needed) *quanteda.textplots* 
+
+
+```{r}
+# Trim the data to only include words that occur twice or more
+dfm.trimmed<-dfm_trim(dfm.data, min_count=2)
+library(quanteda.textplots)
+textplot_wordcloud(dfm.trimmed, min_count = 2)
+
+# Ok, this is the third iteration, there is still some weird character that apparently is not punctuation or a number, though this is much cleaner than the first two passes with punctuation and numbers
+```
+
+E.	Next, **increase the minimum count to 10**. What happens to the word cloud? **Explain in a comment**. 
+
+
+```{r}
+dfm.trimmed2<-dfm_trim(dfm.data, min_count=10)
+textplot_wordcloud(dfm.trimmed, min_count = 10)
+# The cloud decreases in size substantially, which shows that the number of words that appear at a high frequency is much smaller than the number of words that appear 2 times. 
+```
+
+F.	What are the top words in the word cloud? Explain in a brief comment.
+
+
+```{r}
+# The top words in the reduced cloud are Plow, Plows, Columbus, and something that looks like a sideways I with an umlaut, I have no clue what that is supposed to be. This coincides with the article explanation, as far as, the contest was for snow plow names, so seeing plow or plows as the largest makes sense. Likewise, the article said that columbus was entered a very large number of times, so again, given the high frequency of occurrence, it makes intuitive sense that it is one of the largest words in the word plot. 
+```
+
+## Part 2: Analyze the sentiment of the descriptions
+
+A.	Create a **named list of word counts by frequency**.<br>
+
+output the 10 most frequent words (their word count and the word). <br>
+
+**Hint**: use **textstat_frequency()** from the *quanteda.textstats* package.
+
+
+```{r}
+library(quanteda.textstats)
+word.frequencies<-textstat_frequency(dfm.data)
+top10<-head(word.frequencies, 10)
+top10
+```
+
+B.	Explain in a comment what you observed in the sorted list of word counts. 
+
+
+```{r}
+# Apparently the sideways I was just an i with an umlaut, so it makes sense now why it was included in the word plot. The plow, plows, and columbus combo likewise mimic what we were able to observe in the word plot, where those were much larger than the other words and here we can see why, as their frequencies are at or over 100. It looks like a lone s was included which is probably a result of being cutoff from plow's or something similar. At a relatively high occurrence it is probably a result of being a part of the top 3. The other words listed in the top 10 were part of the word plot as well however it was difficult to differentiate how many times they had occurred compared to the top 3 because of how quickly the words scale down in size in the word plot. 
+```
+
+## Part 3: Match the words with positive and negative words 
+
+A.	Read in the list of positive words, using the scan() function, and output the first 5 words in the list. Do the same for the  the negative words list: <br>
+<br>
+https://intro-datascience.s3.us-east-2.amazonaws.com/positive-words.txt
+<br>
+https://intro-datascience.s3.us-east-2.amazonaws.com/negative-words.txt <br>
+<br>
+
+There should be 2006 positive words and 4783 negative words, so you may need to clean up these lists a bit. 
+
+
+```{r}
+# Storing the url into variables 
+url2<-("https://intro-datascience.s3.us-east-2.amazonaws.com/positive-words.txt")
+
+url3<-("https://intro-datascience.s3.us-east-2.amazonaws.com/negative-words.txt")
+
+# Using the scan function to read in the positive and negative word list
+pos.words<-scan(url2, what="", skip=35, quiet=TRUE)
+neg.words<-scan(url3, what="", skip=35, quiet=TRUE)
+
+# Displaying the first 5 words in the positive and negative words list
+pos.words[1:5]
+neg.words[1:5]
+```
+
+B.	Use **dfm_match()** to match the words in the dfm with the words in posWords). Note that **dfm_match()** creates a new dfm.
+
+Then pass this new dfm to the **textstat_frequency()** function to see the positive words in our corpus, and how many times each word was mentioned.
+
+
+```{r}
+# Matching the words in the dfm.data dataframe to the words in the positve word list
+matched.dfm.pos<-dfm_match(dfm.data, pos.words)
+#Using textstat to get the frequency of the matched words
+word.freq.match.pos<-textstat_frequency(matched.dfm.pos)
+#Storing the top 10 positive words and then displaying them
+top10.pos<-head(word.freq.match.pos, 10)
+top10.pos
+```
+
+C. Sum all the positive words
+
+
+```{r}
+sum.pos<-sum(word.freq.match.pos$frequency)
+sum.pos
+```
+
+D. Do a similar analysis for the negative words - show the 10 most requent negative words and then sum the negative words in the document.
+
+
+```{r}
+# Matching the words in the dfm.data dataframe to the words in the positve word list
+matched.dfm.neg<-dfm_match(dfm.data, neg.words)
+#Using textstat to get the frequency of the matched words
+word.freq.match.neg<-textstat_frequency(matched.dfm.neg)
+#Storing the top 10 positive words and then displaying them
+top10.neg<-head(word.freq.match.neg, 10)
+top10.neg
+
+sum.neg<-sum(word.freq.match.neg$frequency)
+sum.neg
+```
+
+E.	Write a comment describing what you found after matching positive and negative words. Which group is more common in this dataset? Might some of the negative words not actually be used in a negative way?  What about the positive words?
+
+
+```{r}
+# The positive words have a higher frequency with a count of 161 versus a count of 93 for the negative words. Considering the context of the document I would not consider these words strongly positive or negative as they are just meanings of the names suggested. As such words like funny, dump, frozen, or bust, while in some context may be interpreted as negative, in this they are neutral and don't really give us much insight into the attitude of those supplying suggestions. 
+```

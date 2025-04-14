@@ -1,0 +1,150 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+  
+---
+# Intro to Dat Science - HW 2
+##### Copyright  Jeffrey Stanton, Jeffrey Saltz, and Jasmina Tacheva
+
+### IST 687
+### Kent Roller 
+### Homework 2
+### Due Date: 1/26/24
+### Submission: 01/25/24
+
+
+```{r}
+# Enter your name here: Kent Roller
+```
+
+### Attribution statement: (choose only one and delete the rest)
+
+
+```{r}
+# 1. I did this homework by myself, with help from the book and the professor.
+```
+
+### Reminders of things to practice from last week: 
+Assignment arrow  		<- <br>
+The combine command 	c( ) <br>
+Descriptive statistics 	mean( ) sum( ) max( ) <br>
+Arithmetic operators		+ - * /<br>
+Boolean operators		>    <    >=    <=   ==   !=  <br>
+
+**This Week:** Explore the **quakes** dataset (which is included in R). Copy the **quakes** dataset into a new dataframe (call it **myQuakes**), so that if you need to start over, you can do so easily (by copying quakes into myQuakes again). Summarize the variables in **myQuakes**. Also explore the structure of the dataframe
+
+
+
+```{r}
+my.quakes<-quakes
+str(my.quakes)
+library(tidyverse)
+glimpse(my.quakes)
+```
+
+**Step 1:** Explore the earthquake magnitude variable called **mag**  <br>
+
+A.	What is the average magnitude? Use mean() or summary():
+
+
+```{r}
+mean(my.quakes$mag)
+```
+
+B.	What is the magnitude of the largest earthquake? Use max() or summary() and save the result in a variable called **maxQuake**:
+
+
+```{r}
+max(my.quakes$mag)
+max.quake<-max(my.quakes$mag)
+```
+The magnitude of the largest earthquake is 6.4.\newline
+
+
+
+C.	What is the magnitude of the smallest earthquake? Use min() or summary() and save the result in a variable called **minQuake**:
+
+
+```{r}
+min(my.quakes$mag)
+min.quake<-min(my.quakes$mag)
+```
+The magnitude of the smallest Earthquake is 4.\newline
+
+
+D.	Output the **third row** of the dataframe
+
+
+```{r}
+my.quakes[3,]
+```
+
+E. Create a new dataframe, with only the rows where the **magnitude is greater than 4**. How many rows are in that dataframe (use code, do not count by looking at the output) 
+
+
+```{r}
+my.quakes.big<-my.quakes %>% filter(mag>4)
+num.rows<-my.quakes.big %>% count()
+num.rows
+```
+Using the count() function we can see that there are 954 rows.\newline 
+
+
+F.	Create a **sorted dataframe** based on magnitude and store it in **quakeSorted1**. Do the sort two different ways, once with arrange() and then with order()
+
+
+```{r}
+quake.sorted1<-my.quakes.big %>% arrange(mag)
+quake.sorted2<-my.quakes.big[order(my.quakes.big$mag),]
+```
+
+G.	What are the latitude and longitude of the quake reported by the largest number of stations?  
+
+
+```{r}
+max.stations<-my.quakes %>% slice_max(order_by=stations, n=1)
+max.stations
+
+max.stations2<-my.quakes.big %>% slice_max(order_by=stations, n=1)
+max.stations2
+
+#Wasn't sure if we were supposed to continue using the modified or original data frame for this one so I used both, the answer is the same regardless since its the max
+```
+The latitude for the largest quake is -12.23 and the longitude is 167.02.(12.23 South 167.02 West)\newline
+
+H.	What are the latitude and longitude of the quake reported by the smallest number of stations?  
+
+
+```{r}
+min.stations<-my.quakes %>% slice_min(order_by=stations, n=1)
+min.stations
+
+min.stations2<-my.quakes.big %>% slice_min(order_by=stations, n=1)
+min.stations2
+
+# There are multiple observations that have the same number of stations, since it is not known if desired modified code has been included that resolves this issue (if it is an issue)
+
+min.stations1.2<-my.quakes %>% slice_min(order_by=stations, n=1, with_ties = FALSE)
+min.stations1.2
+min.stations2.2<-my.quakes.big %>% slice_min(order_by=stations,n=1,with_ties = FALSE)
+min.stations2.2
+
+```
+The latitude of the smallest Earthquake is -21 and the longitude is 181.66 (-21 South 181.66 West)\newline
+**Step 3:** Using conditional if statements <br>
+
+I.	 Test if **maxQuake** is greater than 7 (output “yes” or “no”) <br>
+**Hint:** Try modifying the following code in R: 
+
+
+```{r}
+if (max.quake > 7) "Yes, Max Quake is larger than 7" else " No, Max Quake is not larger than 7"
+```
+
+J.	 Following the same logic, test if **minQuake** is less than 3 (output “yes” or “no”):
+
+
+```{r}
+if (min.quake < 3) "Yes, Min Quake is smaller than 3" else "No, Min Quake is not smaller than 3"
+```

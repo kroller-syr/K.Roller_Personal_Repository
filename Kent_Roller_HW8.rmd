@@ -1,0 +1,222 @@
+# Intro to Data Science HW 8
+##### Copyright Jeffrey Stanton, Jeffrey Saltz, and Jasmina Tacheva
+
+### IST 687
+### Kent Roller 
+### Due Date: 3/08/24
+### Submission Date: 03/08/24
+
+```{r}
+# Enter your name here: Kent Roller 
+```
+
+### Attribution statement: (choose only one and delete the rest)
+
+
+```{r}
+# 1. I did this homework by myself, with help from the book and the professor.
+
+```
+
+Supervised learning means that there is a **criterion one is trying to predict**. The typical strategy is to **divide data** into a **training set** and a **test set** (for example, **two-thirds training** and **one-third test**), train the model on the training set, and then see how well the model does on the test set. <br>
+
+**Support vector machines (SVM)** are a highly flexible and powerful method of doing **supervised machine learning**.
+
+Another approach is to use **partition trees (rpart)** 
+
+In this homework, we will use another banking dataset to train an SVM model, as well as an rpart model, to **classify potential borrowers into 2 groups of credit risk** – **reliable borrowers** and **borrowers posing a risk**. You can learn more about the variables in the dataset here:<br> https://archive.ics.uci.edu/ml/datasets/Statlog+%28German+Credit+Data%29 <br>
+
+This kind of classification algorithms is used in many aspects of our lives – from credit card approvals to stock market predictions, and even some medical diagnoses. <br>
+
+## Part 1: Load and condition the data  
+
+A.	Read the contents of the following .csv file into a dataframe called **credit**: <br>
+
+https://intro-datascience.s3.us-east-2.amazonaws.com/GermanCredit.csv <br>
+
+You will also need to install( ) and library( ) several other libraries, such as **kernlab** and **caret**.
+
+
+
+```{r}
+library(tidyverse)
+library(caret)
+#install.packages("kernlab")
+library(kernlab)
+
+data1<-("https://intro-datascience.s3.us-east-2.amazonaws.com/GermanCredit.csv")
+credit<-read_csv(data1)
+```
+
+B.	Which variable contains the outcome we are trying to predict, **credit risk**? For the purposes of this analysis, we will focus only on the numeric variables and save them in a new dataframe called **cred**:
+
+
+```{r}
+
+# The variable that contains the observation of interest is stored as a factor in credit_risk
+cred <- data.frame(duration=credit$duration, 
+                   amount=credit$amount, 
+                   installment_rate=credit$installment_rate, 
+                   present_residence=credit$present_residence, 
+                   age=credit$age, 
+                   credit_history=credit$number_credits, 
+                   people_liable=credit$people_liable, 
+                   credit_risk=as.factor(credit$credit_risk))
+```
+
+
+
+
+C.	Although all variables in **cred** except **credit_risk** are coded as numeric, the values of one of them are also **ordered factors** rather than actual numbers. In consultation with the **data description link** from the intro, write a comment identifying the **factor variable** and briefly **describe** each variable in the dataframe. 
+
+
+```{r}
+# The credit history is the other variable that has been coded as categorical which can be converted to a factor. 
+
+# Duration: Duration of loan in months 
+
+# Amount: Amount of loan in euros(I assume this hasnt been converted to USD but this doesnt specify. )
+
+# Installment_rate: Installment rate in percentage of disposable income 
+
+# Present_residence: How long in years the person has been a residence at their current address
+
+# Age: Age of the person applying for the loan  
+
+# Credit History: Categorical variable of credit history for applicant 
+
+# People Liable: Number of people being liable to provide maintenance for. (Dependents)
+
+# Credit Risk: A factor of if the person is deemed a credit risk or not based off of the other variables. 
+```
+
+## Part 2: Create training and test data sets
+
+A.	Using techniques discussed in class, create **two datasets** – one for **training** and one for **testing**.
+
+
+```{r}
+trainlist<-createDataPartition(y=cred$credit_risk, p=0.80, list=FALSE)
+
+train.set<-cred[trainlist,]
+test.set<-cred[-trainlist,]
+```
+
+B.	Use the dim( ) function to demonstrate that the resulting training data set and test data set contain the appropriate number of cases.
+
+
+```{r}
+dim(test.set)
+dim(train.set)
+```
+
+## Part 3: Build a Model using SVM
+
+A.	Using the caret package, build a support vector model using all of the variables to predict **credit_risk**
+
+
+```{r}
+svm.mod<-train(credit_risk~., data=train.set, method="svmLinear", preProc=c("center", "scale"))
+
+predict.mod<-predict(svm.mod, newdata=test.set, type="raw")
+
+
+```
+
+B. output the model
+
+Hint: explore finalModel in the model that would created in F.
+
+
+```{r}
+svm.mod$finalModel
+svm.mod$results
+```
+
+## Part 4: Predict Values in the Test Data and Create a Confusion Matrix
+
+A.	Use the predict( ) function to validate the model against test data. Store the predictions in a variable named **svmPred**.
+
+
+```{r}
+# Performed in previous step, will store in a new variable.
+svm.pred<-predict.mod
+```
+
+B.	The **svmPred** object contains a list of classifications for reliable (=0) or risky (=1) borrowers. Review the contents of **svmPred** using head( ).
+
+
+```{r}
+head(svm.pred)
+```
+
+C.	Explore the **confusion matrix**, using the caret package
+
+
+```{r}
+confusionMatrix(svm.pred, test.set$credit_risk)
+
+```
+
+D.	What is the **accuracy** based on what you see in the confusion matrix. 
+
+
+```{r}
+# The confusion matrix output shows the accuracy of the model is 70%, however the No Information Rate is also 70%, additionally the 95% CI for the Accuracy places it as low as 63.14%. Lastly, the P-Value for the [Acc>NIR] is 0.5348, which means that there is no statistically significant difference between the model we made and random guessing. 
+```
+
+E.	Compare your calculations with the **confusionMatrix()** function from the **caret** package.
+
+
+```{r}
+# The calculcations done: 140/(140+60)=0.7, so the output from the confusion matrix is calculated to be the same as manual calculation
+```
+
+F.	Explain, in a block comment:<br> 1) why it is valuable to have a “test” dataset that is separate from a “training” dataset, and <br>2) what potential ethical challenges this type of automated classification may pose. 
+
+
+```{r}
+# It is necessary to split the data into training and testing in order to make a model able to predict and to have the ability to verify its ability to predict new values. If you use the entire dataset to train then you can overfit the model and end up with a perfect model in testing as it would be predicting values it already knew, this could lead to issues when trying to use the model on fresh data as the expected accuracy would be much lower. 
+# Some of the ethical issues facing automated classification is that the model will incorporate whatever type of bias is inherently in the dataset if not filtered out. This is especially true for use cases that involve historical data sets or data sets that originate from un-vetted sources. This is also apparent when using text or categorical data especially when pulling from such sources as social media where extra care has to be taken with any training material used as it tends to be volatile in nature. 
+```
+
+## Part 5: Now build a tree model (with rpart)
+
+A. Build a model with rpart
+<br>
+Note: you might need to install the e1071 package
+
+
+```{r}
+library(e1071)
+cred.tree<-rpart::rpart(credit_risk~.,data=train.set)
+```
+
+B. Visualize the results using  rpart.plot()
+
+
+```{r}
+library(rpart.plot)
+prp(cred.tree, faclen = 0, cex=0.8, extra=1)
+```
+
+C. Use the **predict()** function to predict the testData, and then generate a confusion matrix to explore the results
+
+
+```{r}
+predicted.credit<-predict(cred.tree, newdata=cred, type="class")
+predicted.credit[1]
+actual.credit<-as.factor(cred$credit_risk=="1")
+conf.matrix<-table(predicted.credit, actual.credit)
+conf.matrix
+accuracy<-1-(sum(conf.matrix)-sum(diag(conf.matrix)))/sum(conf.matrix)
+accuracy
+```
+
+D. Review the attributes being used for this credit decision. Are there any that might not be appropriate, with respect to fairness? If so, which attribute, and how would you address this fairness situation. Answer in a comment block below
+
+
+```{r}
+cred.tree
+# One attribute that sticks out as potentially unfair is the duration of time at present address as this could be unintentionally unfair to those who would otherwise be good candidates for the credit but due to a recent relocation are being judged as a credit risk. This would be especially frustrating to service members or other professions that found themselves relocating on a frequent basis due to their work. 
+```
