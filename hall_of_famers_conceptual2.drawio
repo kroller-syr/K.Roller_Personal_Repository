@@ -1,0 +1,80 @@
+<mxfile host="app.diagrams.net" modified="2024-05-27T22:01:37.162Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36" etag="ent_qti5xUAkw7xQsBC1" version="24.4.8" type="device">
+  <diagram name="Page-1" id="T4kSWjIOTZ4_IxBCTIlJ">
+    <mxGraphModel dx="2074" dy="1132" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="uIqyHWirys7bdtOX6esM-1" value="Players" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;rounded=1;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="370" y="320" width="160" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="uIqyHWirys7bdtOX6esM-2" value="+name[RC]&lt;br&gt;+date of birth&amp;nbsp;&lt;br&gt;+position[R]&lt;div&gt;+height&amp;nbsp;&lt;/div&gt;&lt;div&gt;+age [D]&lt;/div&gt;&lt;div&gt;+weight&lt;/div&gt;&lt;div&gt;+nationality&amp;nbsp;&lt;/div&gt;" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;" parent="uIqyHWirys7bdtOX6esM-1" vertex="1">
+          <mxGeometry y="50" width="160" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="uIqyHWirys7bdtOX6esM-3" value="Teams" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;rounded=1;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="50" y="650" width="160" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="uIqyHWirys7bdtOX6esM-4" value="+team name[RU]&amp;nbsp;&lt;br&gt;+city[R]&lt;br&gt;+state[RC]" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;" parent="uIqyHWirys7bdtOX6esM-3" vertex="1">
+          <mxGeometry y="50" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="uIqyHWirys7bdtOX6esM-5" value="Seasons" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;rounded=1;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="80" y="25" width="160" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="uIqyHWirys7bdtOX6esM-6" value="+year&lt;br&gt;+description&amp;nbsp;&lt;div&gt;+made playoffs&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;" parent="uIqyHWirys7bdtOX6esM-5" vertex="1">
+          <mxGeometry y="50" width="160" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="uIqyHWirys7bdtOX6esM-11" value="Statistics&amp;nbsp;" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;rounded=1;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="730" y="590" width="160" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="uIqyHWirys7bdtOX6esM-12" value="+points[R]&lt;br&gt;+assists[R]&lt;br&gt;+rebounds[R]&lt;div&gt;+steals[R]&lt;/div&gt;&lt;div&gt;+blocks[R]&lt;/div&gt;&lt;div&gt;+turnovers[R]&lt;/div&gt;&lt;div&gt;+minutes played[RC]&lt;/div&gt;&lt;div&gt;+seasons played[R]&lt;/div&gt;" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;" parent="uIqyHWirys7bdtOX6esM-11" vertex="1">
+          <mxGeometry y="50" width="160" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="uIqyHWirys7bdtOX6esM-13" value="" style="endArrow=ERzeroToMany;html=1;rounded=0;exitX=0.067;exitY=1.048;exitDx=0;exitDy=0;startArrow=ERzeroToMany;startFill=0;endFill=0;exitPerimeter=0;" parent="1" source="uIqyHWirys7bdtOX6esM-2" target="uIqyHWirys7bdtOX6esM-3" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="130" y="300" as="sourcePoint" />
+            <mxPoint x="490" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uIqyHWirys7bdtOX6esM-14" value="Plays For/Player Roster" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="uIqyHWirys7bdtOX6esM-13" vertex="1" connectable="0">
+          <mxGeometry y="2" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uIqyHWirys7bdtOX6esM-19" value="" style="endArrow=ERzeroToMany;html=1;rounded=0;exitX=0.908;exitY=1.036;exitDx=0;exitDy=0;exitPerimeter=0;entryX=-0.004;entryY=0.409;entryDx=0;entryDy=0;entryPerimeter=0;startArrow=ERmandOne;startFill=0;endFill=0;" parent="1" source="uIqyHWirys7bdtOX6esM-2" target="uIqyHWirys7bdtOX6esM-12" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="330" y="680" as="sourcePoint" />
+            <mxPoint x="490" y="680" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uIqyHWirys7bdtOX6esM-22" value="Generate/Generated By" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="uIqyHWirys7bdtOX6esM-19" vertex="1" connectable="0">
+          <mxGeometry x="-0.0001" y="1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a3oi0MgdwooF7dZJmUmI-1" value="Accolades" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;rounded=1;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="710" y="10" width="160" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="a3oi0MgdwooF7dZJmUmI-2" value="+mvp status&lt;br&gt;+rookie of the year&lt;br&gt;+finals mvp&lt;div&gt;+scoring title&lt;/div&gt;&lt;div&gt;+defensive player of the year&lt;/div&gt;&lt;div&gt;+championships&lt;/div&gt;&lt;div&gt;+olympic medals&lt;/div&gt;" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;" vertex="1" parent="a3oi0MgdwooF7dZJmUmI-1">
+          <mxGeometry y="50" width="160" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="a3oi0MgdwooF7dZJmUmI-7" value="" style="endArrow=ERzeroToMany;html=1;rounded=0;exitX=0.992;exitY=0.181;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;startArrow=ERoneToMany;startFill=0;endFill=0;exitPerimeter=0;" edge="1" parent="1" source="uIqyHWirys7bdtOX6esM-6" target="a3oi0MgdwooF7dZJmUmI-2">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="520" y="550" as="sourcePoint" />
+            <mxPoint x="680" y="550" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a3oi0MgdwooF7dZJmUmI-8" value="" style="endArrow=ERzeroToMany;html=1;rounded=0;exitX=0.017;exitY=0.133;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;startArrow=ERmandOne;startFill=0;endFill=0;exitPerimeter=0;" edge="1" parent="1" source="uIqyHWirys7bdtOX6esM-2" target="uIqyHWirys7bdtOX6esM-6">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="520" y="550" as="sourcePoint" />
+            <mxPoint x="680" y="550" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a3oi0MgdwooF7dZJmUmI-9" value="" style="endArrow=ERzeroToMany;html=1;rounded=0;exitX=0.45;exitY=1.044;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.346;entryY=-0.011;entryDx=0;entryDy=0;entryPerimeter=0;startArrow=ERzeroToMany;startFill=0;endFill=0;" edge="1" parent="1" source="a3oi0MgdwooF7dZJmUmI-2" target="uIqyHWirys7bdtOX6esM-11">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="520" y="550" as="sourcePoint" />
+            <mxPoint x="680" y="550" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
