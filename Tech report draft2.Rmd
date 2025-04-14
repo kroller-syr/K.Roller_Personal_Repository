@@ -1,0 +1,158 @@
+---
+title: "JC Parks and Rec Technical Report"
+author: "Kent Roller"
+date: "2023-10-16"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Johnson City Parks and Recreation Economic Impact Analysis 
+
+                                            **Abstract**
+  This study aims to perform an Economic Analysis on behalf of the Johnson City Parks and Recreation Department. Our partner, the Parks and Recreation Department of Johnson City, wants to know what the effect on tourism a planned park expansion will have on the region. Being that the park expansion will be an additional input for the regions tourism numbers overall, the parks department naturally wants to know what the expected economic impact will be on the region due to this increase in tourism. To perform this analysis we will be relying on information from a variety of sources in order to construct a table of known expenditures. From there, we will make use of the RIMS II multiplier tables which are generated using an I/O model of the region.This will allow us to create region specific impact estimates that we can share with the parks department, and they in turn can use to share with interested parties. This will also allow the park department to have estimates as to how this project will impact their bottom line. 
+  
+  
+  
+## Part 1 The Data 
+
+  Initially for this study we were presented with minimal information from the parks department itself. We received data for the 2022 and 2023 baseball seasons and the maintenance charged for the use of the baseball fields. The data was in the form of a word document and only contained the number of teams, the date of the tournament, and the amount charged to the director of the tournament for use of the fields. This was less than what we had hoped to get our hands on, but the none-the-less it was a start. 
+  To begin with, we took the data received and put it into the form of a table so that it was more readable in a raw format as well as making it compatible with software packages like R, Python, or Eviews. Additionally, we referred to some secondary studies in order to pad out the data further with such information as initial party spending estimates or non-local percenatage of attendees. We will cover this secondary information in Part 2, but for now, our focus will remain on the initial data.  
+  
+```{r, echo=FALSE}
+parks<-readxl::read_excel("C:\\Users\\super\\OneDrive\\Documents\\JC Parks and Rec stuff\\Copy of JC Parks and Rec data software friendly.xlsx")
+head(parks)
+```
+A brief breakdown of the data set created so far:\newline 
+* days: The duration of the tournament in days \newline 
+* teams: The number of teams participating in a tournament \newline
+* fee: The fee charged to the tournament director for use of the park\newline 
+* labor: The labor cost associated with running the tournament\newline 
+* material: Material cost associated with running the tournament\newline
+* combined: Combined Labor and Material cost\newline 
+* month: the month in which the tournament took place\newline
+* players: The number of players participating in the tournament (extrapolated information) \newline
+* spending: Average spending per tournament calculated using information from secondary study \newline
+* nonlocal: The adjusted spending amount assuming 89% nonlocal tournament participation rate (obtained from secondary study)\newline
+
+
+```{r, echo=FALSE}
+summary(parks)
+```
+
+
+
+From a glance at the summary statistics for the information, we can gain some insight into the behaviour at the parks. For instance, we can see that the median number of days for park tournaments is 1 day. We can also see that the mean number of teams is ~19.93 per tournament, and that they were charged on average 643 dollars to participate in the tournament. When looking at player counts we can see that on average each tournament brings around 419 players to the region. Lastly, we can see from data provided, the average initial estimates for expenditures put the average at around $142,314 per tournament. This table as configured includes data for both 2022 and YTD 2023. When 2021 data is provided from the park the data will be added to the table and used in any additional analysis.\newline
+
+Here we can see a graph that compares the two years of data by month: 
+```{r, fig.align='center',echo=FALSE}
+sub_player1<-parks$players[2:36]
+sub_player2<-parks$players[37:60]
+sub_months<-parks$month[2:36]
+common_length<-min(length(sub_player1),length(sub_player2))
+player1<- sub_player1[1:common_length]
+player2<- sub_player2[1:common_length]
+months<- sub_months[1:common_length]
+sep_data<-data.frame(Month=months,Player1=player1,Player2=player2)
+player_matrix<-sep_data[,c("Player1","Player2")]
+month_labels<-as.character(sep_data$Month)
+matplot(player_matrix, type = "b", pch = 19, col = c("blue", "red"), xaxt = "n")
+axis(1, at = 1:length(month_labels), labels = month_labels)
+legend("topleft", legend = c("Player # '22", "Player # '23"), col = c("blue", "red"), pch = 19)
+title(main = "Player Comparison 2022vs2023")
+xlabel <- "Month"
+ylabel <- "Player count by tournament"
+mtext(xlabel, side = 1, line = 3)
+mtext(ylabel, side = 2, line = 2)
+```
+
+Looking at the graph, we can see that the lines tend to follow similar patterns, remaining fairly constant throughout the season with peaks at the beginning and end. This coincides with the scheduling of baseball/softball, with the start of the season usually being late march and the end of the season being in August/September. Here we can notice that the demand for the fields seems to be fairly constant throughout the baseball/softball season. The zero player counts that are observable are due to rain-outs, in which the tournament was cancelled due to unplayable conditions. The numbers are a little lower for the second half of the season for '23, however any suggestion as to why this has occurred is beyond the scope of this report. 
+Looking at additional visualizations, we can likewise compare spending by year.
+```{r, fig.align='center',echo=FALSE }
+sub_spending1<-parks$spending[2:36]
+sub_spending2<-parks$spending[37:60]
+sub_months<-parks$month[2:36]
+common_length<-min(length(sub_spending1),length(sub_spending2))
+spending1<- sub_spending1[1:common_length]
+spending2<- sub_spending2[1:common_length]
+months<- sub_months[1:common_length]
+spend_data<-data.frame(Month=months,Spending1=spending1,Spending2=spending2)
+spending_matrix<-spend_data[,c("Spending1","Spending2")]
+month_labels<-as.character(sep_data$Month)
+matplot(spending_matrix, type = "b", pch = 19, col = c("skyblue", "purple"), xaxt = "n")
+axis(1, at = 1:length(month_labels), labels = month_labels)
+legend("topleft", legend = c("Spening '22", "Spending '23"), col = c("skyblue", "purple"), pch = 19)
+title(main = "Spending Comparison 2022vs2023")
+xlabel <- "Month"
+ylabel <- "Spending by tournament"
+mtext(xlabel, side = 1, line = 3)
+mtext(ylabel, side = 2, line = 2)
+```
+Unsurprisingly we can see that the spending per tournament closely mimics that of the number of player per tournament, intuitively suggesting that the more players there are in a given tournament the more spending occurs in the region. We can also see, again, rather intuitively, that if the tournament does not take place then there is no spending in the region because there are no players in the region. We can also observe that on the average, spending remains fairly constant throughout the season after an initial peak at the beginning of the season (relatively speaking).  
+\newpage 
+
+We can also look at material cost comparisons between year, though it should be noted that all material cost are essentially constant so this really only shows the difference in tournament type(1,2,3 day) over the two years more than anything else. If more data was available for per tournament cost then a more robust graph could be made with this particular data. 
+```{r,fig.align='center',echo=FALSE}
+sub_combined1<-parks$combined[2:36]
+sub_combined2<-parks$combined[37:60]
+sub_months<-parks$month[2:36]
+common_length<-min(length(sub_combined1),length(sub_combined2))
+combined1<- sub_combined1[1:common_length]
+combined2<- sub_combined2[1:common_length]
+months<- sub_months[1:common_length]
+combined_data<-data.frame(Month=months,Combined1=combined1,Combined2=combined2)
+combined_matrix<-combined_data[,c("Combined1","Combined2")]
+month_labels<-as.character(combined_data$Month)
+matplot(combined_matrix, type = "b", pch = 19, col = c("gold", "darkgreen"), xaxt = "n")
+axis(1, at = 1:length(month_labels), labels = month_labels)
+legend("topleft", legend = c("Maint Cost '22", "Maint Cost '23"), col = c("gold", "darkgreen"), pch = 19)
+title(main = "Maintenance Cost Comparison 2022vs2023")
+xlabel <- "Month"
+ylabel <- "Maintenance cost by tournament"
+mtext(xlabel, side = 1, line = 3)
+mtext(ylabel, side = 2, line = 2)
+```
+
+Looking at the maintenance cost comparisons, we see the expected behaviour, where the most we can pull from this is how many of each type of tournament occurred. This is known due to the cost associated with each tournament, where the 1 day tournaments cost ~2000, the 2 day tournaments cost ~3800, the 3 day tournaments cost ~6000, and the 4 day tournament is calculated to have cost ~8000. We can see that 2023 appears to have had a greater number of 2 day tournaments when compared to 2022. There have been no large peaks with a four day tournament so far in 2023.\newpage
+
+Lastly, we can look at the fees charged to the tournament directors between the two years. 
+```{r,fig.align='center',echo=FALSE}
+sub_fee1<-parks$fee[2:36]
+sub_fee2<-parks$fee[37:60]
+sub_months<-parks$month[2:36]
+common_length<-min(length(sub_fee1),length(sub_fee2))
+fee1<- sub_fee1[1:common_length]
+fee2<- sub_fee2[1:common_length]
+months<- sub_months[1:common_length]
+fee_data<-data.frame(Month=months,Fee1=fee1,Fee2=fee2)
+fee_matrix<-fee_data[,c("Fee1","Fee2")]
+month_labels<-as.character(combined_data$Month)
+matplot(fee_matrix, type = "b", pch = 19, col = c("orange", "maroon"), xaxt = "n")
+axis(1, at = 1:length(month_labels), labels = month_labels)
+legend("bottomright", legend = c("Fees '22", "Fees '23"), col = c("orange", "maroon"), pch = 19)
+title(main = "Fee Charged Comparison 2022vs2023")
+xlabel <- "Month"
+ylabel <- "Fee cost by tournament"
+mtext(xlabel, side = 1, line = 3)
+mtext(ylabel, side = 2, line = 2)
+```
+
+Looking at the fee comparison between 2022 and 2023, we can see that 2023 actually seems to trend somewhat higher in the average price charged to the tournament directors, relative to the same month. Overall the difference is:
+```{r, echo=FALSE}
+fee22avg<-mean(sub_fee1)
+fee23avg<-mean(sub_fee2)
+fee22avg
+fee23avg
+fee23avg-fee22avg
+```
+The average for 2022 is 554 dollars and the average for 2023 is 766. This is a 212 dollar increase over the previous year. This is inline with expected cost increases and adjusting pricing to accurately reflect the cost of maintenance. 
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
